@@ -7,6 +7,12 @@
     <script type="module" src="dist/artha.min.js"></script>
 </head>
 <body>
-    
+    <artha-message id="test-message" type="success">Hola como estas??</artha-message>
 </body>
 </html>
+
+<script type="module">
+    const message=document.getElementById('test-message');
+    console.log(message);
+    message.error("dsa");
+</script>

@@ -29,24 +29,6 @@ const DEFAULT_CONFIG={
         title:"Petición en proceso...",
         close:false,
         message:null
-    },
-    message:{
-        error:{
-            code:-1,
-            class:'message-error'
-        },
-        info:{
-            code:0,
-            class:'message-info'
-        },
-        success:{
-            code:1,
-            class:'message-success'
-        },
-        warning:{
-            code:2,
-            class:'message-warning'
-        }
     }
 };
 

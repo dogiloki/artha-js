@@ -1,0 +1,26 @@
+@use './colors.scss' as *;
+
+artha-message{
+    width: 100%;
+    padding: 10px;
+    text-align: left;
+    font-size: 1em;
+    cursor: default;
+
+    &[type="error"]{
+        background-color: $msg_background_error_color;
+        color: $msg_text_error_color;
+    }
+    &[type="success"]{
+        background-color: $msg_background_success_color;
+        color: $msg_text_success_color;
+    }
+    &[type="warning"]{
+        background-color: $msg_background_warning_color;
+        color: $msg_text_warning_color;
+    }
+    &[type="info"]{
+        background-color: $msg_background_info_color;
+        color: $msg_text_info_color;
+    }
+}
