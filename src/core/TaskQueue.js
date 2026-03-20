@@ -1,5 +1,6 @@
 import Config from "./Config.js";
 import Util from "./Util.js";
+import ArthaMessage from "../components/artha-message.js";
 
 export default class TaskQueue{
     
@@ -21,13 +22,32 @@ export default class TaskQueue{
         if(typeof options!=='object'){
             options={close:options};
         }
+        if(this.queues.has(id)){
+            alert("La petición ya está en proceso... Por favor espere.");
+            return null;
+        }
+        options.title=title;
+        const task=new TaskQueueItem(id,callback,options);
+        this.onFinalize=(remove=false)=>{
+            if(remove && !task.finalized){
+                task.message_element.warning(task.options.title);
+                return;
+            }
+            task.finalized=true;
+            this.queues.delete(id);
+            if(task.options.close || remove){
+                setTimeout(()=>task.removeElement(),task.options.close?2500:0);
+            }
+        };
+        this.queues.set(id,task);
+        return task;
     }
 
 }
 
 class TaskQueueItem{
 
-    constructor(id,title,callback,options){
+    constructor(id,callback,options){
         this.id=id;
         this.callback=callback;
         options={...Config.get("task_queue"),...options};
@@ -36,13 +56,115 @@ class TaskQueueItem{
             close,
             message
         }=options;
-        this.title=title;
-        this.message_element=options.message instanceof HTMLElement?options.message:document.querySelector("#"+options.message);
+        this.options=options;
+        this.message_element=options.message instanceof ArthaMessage?options.message:document.querySelector("#"+options.message);
         this.resolve_callback=null;
         this.reject_callback=null;
         this.finalize=false;
         this.status="pending";
-        Util.modal(this.message_element,this.title,);
+        this.message_element.warning(options.title);
+        this.onFinalize=()=>{};
+
+        // Promesa
+        this.promise=new Promise((resolve,reject)=>{
+            this._resolve=resolve;
+            this._reject=reject;
+        });
+
+        // Ejecutar callback
+        callback(this);
+
+        // Resolver
+        this.promise.then((data)=>{
+            this.handleResponse(data);
+        });
+
+        // Error
+        this.promise.catch((error)=>{
+            this.message_element.error(error?.message||String(error));
+            this.status="error";
+            this.reject_callback?.(error);
+            this.onFinalize();
+        });
+    }
+
+    // Procesar respuesta
+    handleResponse(data){
+        if(!data){
+            this.message_element.error("Error en la respuesta del servidor");
+            this.status="error";
+            this.onFinalize();
+        }
+        let response=data?.response??data;
+
+        // Blob para descargar
+        if(response instanceof Blob){
+            this.status="success";
+            this.resolve_callback?.(response);
+            this.onFinalize();
+            return;
+        }
+        let json;
+        try{
+            json=(typeof response==='string')?JSON.parse(response):response;
+            if(!json || typeof json!=='object'){
+                throw new Error("Respuesta inválida del servidor");
+            }
+        }catch(ex){
+            this.message_element.error(ex.message||String(ex));
+            this.status="error";
+            this.onFinalize();
+            return;
+        }
+        // Obtener mensaje
+        let message=null;
+        if(json.errors && typeof json.errors==='object'){
+            const values=Object.values(json.errors);
+            if(values.length>0){
+                first=values[0];
+                message=Array.isArray(first)?first[0]:first;
+            }
+        }
+        message=message||json.message||"Operación completada";
+        if(message){
+            this.message_element.show(message,json?.status??null);
+        }
+        // Validar respuesta http
+        if(Util.withinRange(json?.status??200,200,299)){
+            if(!message){
+                this.message_element.success("Operación completada");
+            }
+            this.status="success";
+        }else{
+            if(!message){
+                this.message_element.error("Error en la respuesta del servidor");
+            }
+            this.status="error";
+            this.onFinalize();
+            return;
+        }
+        this.resolve_callback?.(json);
+        this.onFinalize();
+    }
+
+    // Cancelar si usa XHR
+    cancel(){
+        if(this.xhr) this.xhr.abort();
+    }
+
+    // Resolver manualmente
+    resolve(data,callback){
+        this.resolve_callback=callback;
+        this._resolve(data);
+    }
+
+    // Recahzar manualmente
+    reject(error){
+        this._reject(error);
+    }
+
+    removeElement(){
+
     }
 
 }

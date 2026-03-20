@@ -12,7 +12,18 @@
 </html>
 
 <script type="module">
-    const message=document.getElementById('test-message');
-    console.log(message);
-    message.error("dsa");
+    import Config from './src/core/Config.js';
+    import Util from './src/core/Util.js';
+    import EventBus from './src/core/EventBus.js';
+    import TaskQueue from './src/core/TaskQueue.js';
+    import XHR from './src/core/XHR.js';
+
+    const task_queue=TaskQueue.singleton();
+
+    task_queue.loadTask('test','Probando conectividad',(task)=>{
+        
+    },{
+        message:document.getElementById('test-message')
+    });
+
 </script>
