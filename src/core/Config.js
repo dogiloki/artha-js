@@ -3,6 +3,27 @@ const DEFAULT_CONFIG={
     currency:"MXN",
     money:{
         digits:2
+    },
+    xhr:{
+        method:"GET",
+        url:null,
+        uri:"",
+        headers:{},
+        data:{},
+        query:{},
+        files:{},
+        response_type:"json",
+        with_credentials:true,
+        timeout:0,
+        retry:false,
+        retry_delay:5000,
+        onLoad:()=>{},
+        onData:()=>{},
+        onError:()=>{},
+        onTimeout:()=>{},
+        onProgress:()=>{},
+        onAbort:()=>{},
+        onAction:()=>{},
     }
 };
 
