@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "sass:dev": "sass --watch src/scss/main.scss:dist/artha.min.css --style=compressed"
+  }
+}

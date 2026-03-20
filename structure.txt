@@ -22,3 +22,18 @@ artha-js/
 ├── README.md
 ├── package.json
 └── LICENSE
+
+
+Desarrollo
+
+Generar css principal
+# sass --watch src/scss/main.scss:dist/artha.min.css --style=compressed
+Actualizar css principal mientras se guardan cambios
+# npm run sass:dev
+
+Levantar servidor en vivo que se actualiza al guardar cambios en un archivo
+live-server --watch=dist --port=8080
+
+
+// Producción
+sass src/scss/main.scss dist/artha.min.css --style=compressed
