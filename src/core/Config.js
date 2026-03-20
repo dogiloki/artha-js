@@ -24,19 +24,42 @@ const DEFAULT_CONFIG={
         onProgress:()=>{},
         onAbort:()=>{},
         onAction:()=>{},
+    },
+    task_queue:{
+        title:"Petición en proceso...",
+        close:false,
+        message:null
+    },
+    message:{
+        error:{
+            code:-1,
+            class:'message-error'
+        },
+        info:{
+            code:0,
+            class:'message-info'
+        },
+        success:{
+            code:1,
+            class:'message-success'
+        },
+        warning:{
+            code:2,
+            class:'message-warning'
+        }
     }
 };
 
 export default class Config{
 
-    static settings=structuredClone(DEFAULT_CONFIG);
+    static SETTINGS={...DEFAULT_CONFIG};
 
     static set(options){
-        this.settings={...this.settings,...options};
+        this.SETTINGS={...this.SETTINGS,...options};
     }
 
     static get(path,def=null){
-        return path.split(".").reduce((o,p)=>o?o[p]:def,this.settings);
+        return path.split(".").reduce((o,p)=>o?o[p]:def,this.SETTINGS);
     }
 
 }
