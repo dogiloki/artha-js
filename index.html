@@ -7,7 +7,12 @@
     <script type="module" src="dist/artha.min.js"></script>
 </head>
 <body>
-    <artha-message id="test-message" type="success">Hola como estas??</artha-message>
+    <artha-form id="form-test" action="https://reqres.in/api/users" method="POST">
+        <input name="name" placeholder="Nombre">
+        <input name="job" placeholder="Trabajo">
+        <button type="submit">Enviar</button>
+        <artha-message id="msg-test"></artha-message>
+    </artha-form>
 </body>
 </html>
 
@@ -17,13 +22,5 @@
     import EventBus from './src/core/EventBus.js';
     import TaskQueue from './src/core/TaskQueue.js';
     import XHR from './src/core/XHR.js';
-
-    const task_queue=TaskQueue.singleton();
-
-    task_queue.loadTask('test','Probando conectividad',(task)=>{
-        
-    },{
-        message:document.getElementById('test-message')
-    });
 
 </script>
