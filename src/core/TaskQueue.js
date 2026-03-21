@@ -26,7 +26,7 @@ export default class TaskQueue{
             alert("La petición ya está en proceso... Por favor espere.");
             return null;
         }
-        options.title=title;
+        if(title) options.title=title;
         const task=new TaskQueueItem(id,callback,options);
         task.onFinalize=(remove=false)=>{
             if(remove && !task.finalized){
