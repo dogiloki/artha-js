@@ -61,10 +61,17 @@ export default class ArthaForm extends HTMLElement{
         });
     }
 
-    // Obtener valor de n input por el atributo name
+    // Obtener valor de un input por el atributo name
     getValue(name){
         const element=this[name]??this.querySelector(`[name="${name}"]`);
         return element?(element.type==='checkbox'?(element.checked?1:0):element.value):null;
+    }
+    input(name){
+        const element=this.querySelector(`[name="${name}"]`);
+        if(element!=null && !(name in this)){
+            this[name]=element;
+        }
+        return element;
     }
 
     // Reset general del formulario
@@ -73,7 +80,24 @@ export default class ArthaForm extends HTMLElement{
             if(element.type==='checkbox') element.checked=false;
             else element.value='';
         });
-        if(reset_message && this.message) this.message.hidden();
+        if(reset_message) this.resetMessage();
+    }
+
+    // Reset al mensaje (ocultar)
+    resetMessage(){
+        if(this.message) this.message.hidden();
+    }
+
+    // Validar formulario
+    checkValidity(){
+        let valid=true;
+        for(const element of this.element_inputs){
+            if(typeof element.checkValidity==='function' && !element.checkValidity()){
+                valid=false;
+                break;
+            }
+        }
+        return valid;
     }
 
     // Enviar formulario
