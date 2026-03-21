@@ -23,9 +23,13 @@ export default class ArthaMessage extends HTMLElement{
         
     });
 
+    constructor(){
+        super();
+    }
+
     connectedCallback(){
-        Util.modal(this,false);
         this.type=this.getAttribute("type")||"info";
+        this.hidden();
     }
 
     error(message=null){

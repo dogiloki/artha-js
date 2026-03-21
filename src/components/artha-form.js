@@ -2,7 +2,6 @@ import Util from '../core/Util.js';
 import XHR from '../core/XHR.js';
 import TaskQueue from '../core/TaskQueue.js';
 import ArthaMessage from './artha-message.js';
-import EventBus from '../core/EventBus.js';
 
 export default class ArthaForm extends HTMLElement{
     
@@ -13,7 +12,7 @@ export default class ArthaForm extends HTMLElement{
         this.disable_submit=this.hasAttribute('disable-submit');
         this.message=this.querySelector('artha-message')??this.querySelector(this.getAttribute('message-target'))??null;
         if(!this.message){
-            this.message=new ArthaMessage();
+            this.message=Util.createElement('artha-message');
             this.appendChild(this.message);
         }
         this.element_inputs=[];
@@ -44,7 +43,7 @@ export default class ArthaForm extends HTMLElement{
             switch(btn.getAttribute('type')){
                 case 'submit': btn.addEventListener('click',(evt)=>this.submit()); break;
                 case 'reset': btn.addEventListener('click',(evt)=>this.reset()); break;
-                default: btn.addEventListener('click',(evt)=>this.submit()); break;
+                default: btn.addEventListener('click',(evt)=>this.submit());
             }
         });
     }
@@ -119,7 +118,7 @@ export default class ArthaForm extends HTMLElement{
                     this.dispatchEvent(new CustomEvent('load',{detail:xhr}));
                 },
                 onData:(data)=>{
-                    // Respuesta procesada según el tipo
+                    // Respuesta procesada en formato json
                     task.resolve(data,(json)=>{
                         if(Util.withinRange(data.status,200,299)){
                             this.fillFromJson(json.data??{},false);
