@@ -28,7 +28,7 @@ export default class TaskQueue{
         }
         options.title=title;
         const task=new TaskQueueItem(id,callback,options);
-        this.onFinalize=(remove=false)=>{
+        task.onFinalize=(remove=false)=>{
             if(remove && !task.finalized){
                 task.message_element.warning(task.options.title);
                 return;
