@@ -1,5 +1,31 @@
 {
+  "name": "@dogiloki/artha-js",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/artha.min.js",
+  "type": "module",
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
-    "sass:dev": "sass --watch src/scss/main.scss:dist/artha.min.css --style=compressed"
-  }
+    "dev": "sass --watch src/scss/main.scss:dist/artha.css",
+    "build": "sass src/scss/main.scss dist/artha.min.css --style=compressed"
+  },
+  "keywords": [
+    "task-queue",
+    "javascript",
+    "notifications",
+    "ui"
+  ],
+  "author": "dogiloki",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dogiloki/artha-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dogiloki/artha-js/issues"
+  },
+  "homepage": "https://github.com/dogiloki/artha-js#readme"
 }
