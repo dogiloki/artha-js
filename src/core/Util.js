@@ -42,9 +42,6 @@ export default class Util{
             digits=Config.get("money.digits")
         }=options;
         value=value.toString();
-        if(value.endsWith(".") && !add_decimals){
-            add_decimals=true;
-        }
         let amount=Number(value.replace(/[^0-9.]/g,""));
         if(isNaN(amount)){
             return value;
