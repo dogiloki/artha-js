@@ -57,12 +57,12 @@ class TaskQueueItem{
             message
         }=options;
         this.options=options;
-        this.message_element=options.message instanceof ArthaMessage?options.message:document.querySelector("#"+options.message);
+        this.message_element=options.message instanceof ArthaMessage?options.message:document.querySelector("#"+options.message)??null;
         this.resolve_callback=null;
         this.reject_callback=null;
-        this.finalize=false;
+        this.finalized=false;
         this.status="pending";
-        this.message_element.warning(options.title);
+        this.message_element?.warning(options.title);
         this.onFinalize=()=>{};
 
         // Promesa
@@ -81,7 +81,7 @@ class TaskQueueItem{
 
         // Error
         this.promise.catch((error)=>{
-            this.message_element.error(error?.message||String(error));
+            this.message_element?.error(error?.message||String(error));
             this.status="error";
             this.reject_callback?.(error);
             this.onFinalize();
@@ -91,9 +91,10 @@ class TaskQueueItem{
     // Procesar respuesta
     handleResponse(data){
         if(!data){
-            this.message_element.error("Error en la respuesta del servidor");
+            this.message_element?.error("Error en la respuesta del servidor");
             this.status="error";
             this.onFinalize();
+            return;
         }
         let response=data?.response??data;
 
@@ -111,7 +112,7 @@ class TaskQueueItem{
                 throw new Error("Respuesta inválida del servidor");
             }
         }catch(ex){
-            this.message_element.error(ex.message||String(ex));
+            this.message_element?.error(ex.message||String(ex));
             this.status="error";
             this.onFinalize();
             return;
@@ -121,23 +122,23 @@ class TaskQueueItem{
         if(json.errors && typeof json.errors==='object'){
             const values=Object.values(json.errors);
             if(values.length>0){
-                first=values[0];
+                const first=values[0];
                 message=Array.isArray(first)?first[0]:first;
             }
         }
         message=message||json.message||"Operación completada";
         if(message){
-            this.message_element.show(message,json?.status??null);
+            this.message_element?.show(message,json?.status??null);
         }
         // Validar respuesta http
-        if(Util.withinRange(json?.status??200,200,299)){
+        if(Util.withinRange(data.status,200,299)){
             if(!message){
-                this.message_element.success("Operación completada");
+                this.message_element?.success("Operación completada");
             }
             this.status="success";
         }else{
             if(!message){
-                this.message_element.error("Error en la respuesta del servidor");
+                this.message_element?.error("Error en la respuesta del servidor");
             }
             this.status="error";
             this.onFinalize();
