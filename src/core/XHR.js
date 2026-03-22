@@ -71,7 +71,7 @@ export default class XHR{
         xhr.addEventListener("load",()=>{
             onLoad(xhr);
             if(Util.withinRange(xhr.status,200,299)){
-                onData(xhr.response);
+                onData(xhr,xhr.response);
             }else{
                 onError(xhr.response);
             }
