@@ -32,7 +32,7 @@ Actualizar css principal mientras se guardan cambios
 # npm run sass:dev
 
 Levantar servidor en vivo que se actualiza al guardar cambios en un archivo
-live-server --watch=. --port=8080
+# live-server --watch=. --port=8080
 
 
 // Producción

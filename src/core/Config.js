@@ -13,7 +13,7 @@ const DEFAULT_CONFIG={
         query:{},
         files:{},
         response_type:"json",
-        with_credentials:true,
+        with_credentials:false,
         timeout:0,
         retry:false,
         retry_delay:5000,

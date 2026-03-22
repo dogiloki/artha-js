@@ -2,6 +2,7 @@ import Util from '../core/Util.js';
 import EventBus from '../core/EventBus.js';
 import XHR from '../core/XHR.js';
 import TaskQueue from '../core/TaskQueue.js';
+import ArthaMessage from './artha-message.js';
 
 export default class ArthaContainer extends HTMLElement{
 
@@ -25,12 +26,11 @@ export default class ArthaContainer extends HTMLElement{
                 get:()=>{
                     switch(prop){
                         case 'template':
-                        case 'message':
                             if(!this._elements[prop] || this._elements[prop].id!==this.getAttribute(prop)){
                                 this._elements[prop]=document.getElementById(this.getAttribute(prop));
                             }
                             return this._elements[prop];
-                        case 'method': return this._elements[prop];
+                        case 'method': return this.getAttribute(prop)??'GET';
                         default: return this.getAttribute(prop);
                     }
                 },
@@ -47,12 +47,13 @@ export default class ArthaContainer extends HTMLElement{
         this.searcher=this.hasAttribute("searcher");
         this.selectable=this.hasAttribute("selectable");
         this.multiple=this.hasAttribute("multiple");
+        this.message=this.querySelector('artha-message')??this.querySelector(this.getAttribute('message-target'))??null;
 
         // Loader
         this.loader_container=this._createLoader();
 
         // Contenido
-        this.content=this.querySelector(':scone > dynamic-content') || this.appendChild(document.createElement('dynamic-content'));
+        this.content=this.querySelector(':scope > dynamic-content') || this.appendChild(document.createElement('dynamic-content'));
         this._content=this.content.children[0];
 
         // Input de búsqueda
@@ -138,6 +139,7 @@ export default class ArthaContainer extends HTMLElement{
     getData(search=null){
         if(!this.action) return;
         const query=search?{search}:{};
+        const id=this.getAttribute("id")??Util.numberRandom(10000,99999);
         this.task_queue.loadTask(`container-${id}`,null,(task)=>{
             XHR.request({
                 url:this.action,
@@ -146,21 +148,22 @@ export default class ArthaContainer extends HTMLElement{
                     'Accept':'application/json'
                 },
                 response_type:this.response_type,
-                query:Object.keys(query).length?query:undefined,
+                query:Object.keys(query).length?query:{},
                 onLoad:(xhr)=>{
                     this.dispatchEvent(new CustomEvent('load',{detail:xhr}));
                 },
-                onData:(data)=>{
+                onData:(xhr,data)=>{
                     // Respuesta procesada en en formato json
-                    task.resolve(data,(json)=>{
-                        if(Util.withinRange(data.status,200,299)){
-                            console.log(data,json);
-                        }
+                    task.resolve(xhr,(json)=>{
                         this.dispatchEvent(new CustomEvent('resolve',{detail:json}));
+                        if(json.message){
+                            this.message?.show(json.message,json.status);
+                        }
+                        this.render(json.data);
                     });
                 },
                 onError:(err)=>{
-                    this.message.error(err??"Error de conexión");
+                    this.message?.error(err??"Error de conexión");
                     task.onFinalize();
                 }
             });
@@ -195,9 +198,9 @@ export default class ArthaContainer extends HTMLElement{
         this.dispatchEvent(new CustomEvent('dynamic-content-loaded',{detail:results}));
     }
 
-    renderItem(data,refresh_children=true,update=true){
+    renderItem(data,refresh_children=true,update=null){
         const template=this.template?(this.template.tagName==='TEMPLATE'?this.template.content.cloneNode(true):this.template.cloneNode(true)):this;
-        const element=update??(this.template?template.children[0]:this);
+        const element=update?update:(this.template?template.children[0]:this);
 
         const items=this._findWires(update?element:template);
         let index=0;
@@ -221,7 +224,7 @@ export default class ArthaContainer extends HTMLElement{
             this.items.push(element);
             element.data=data;
             element.dataset.id=data.id;
-            if(thgis.selectable) this._bindSelectable(element,data);
+            if(this.selectable) this._bindSelectable(element,data);
         }
 
         this.onRenderItem(element,data);
@@ -258,7 +261,142 @@ export default class ArthaContainer extends HTMLElement{
                     default: value=item.getAttribute(attrib_element)+value;
                 }
             }
+            switch(attrib_element.toLowerCase()){
+                case 'textcontent': item.textContent=value; break;
+                case 'innerhtml': item.innerhtml=value; break;
+                case 'boolean':{
+                    if(chooser){
+                        let applied=false;
+                        const templates=item.querySelectorAll('template');
+                        for(const template of templates){
+                            if(template.getAttribute('data-chooser-value')==value){
+                                item.innerHTML="";
+                                item.appendChild(template.content.cloneNode(true));
+                                applied=true;
+                                break;
+                            }
+                        }
+                        if(!applied){
+                            const template=item.querySelector('template[data-chooser-default]')?.content?.cloneNode(true)??document.createElement('span');
+                            item.innerHTML="";
+                            item.appendChild(template);
+                        }
+                    }else{
+                        item.innerHTML="";
+                        item.appendChild(Util.createElement('span',(span)=>{
+                            span.classList.add('check-cross');
+                            if(value){
+                                span.classList.add('check-cross-yes');
+                                span.textContent="✔";
+                            }else{
+                                span.classList.add('check-cross-no');
+                                span.textContent="✘";
+                            }
+                        }));
+                    }
+                    break;
+                }
+                default: this.setAttribute(attrib_element,value);
+            }
+        }else{
+            if(append) value=item.textContent+value;
+            item.textContent=value;
         }
+    }
+
+    _bindSelectable(element,data){
+        const id=element.dataset.id;
+        element.addEventListener('click',(evt)=>{
+            if(this.selection_store.has(id)){
+                const selection=this.selection_store.remove(id);
+                this.dispatchEvent(new CustomEvent('item-deselected',{detail:selection}));
+            }else{
+                if(!this.multiple) this.reset();
+                const selection=this.selection_store.add(id,element,data);
+                this.dispatchEvent(new CustomEvent('item-selected',{detail:selection}));
+            }
+            element.classList.toggle('selected');
+        });
+        if(this.selection_store.has(id)) element.classList.add('selected');
+    }
+
+    _findWires(root){
+        const result=[];
+        for(const child of root.children){
+            if(child instanceof ArthaContainer && child.hasAttribute('data-ignore-wire')) continue;
+            if(child.hasAttribute('data-wire')) result.push(child);
+            result.push(...this._findWires(child));
+        }
+        return result;
+    }
+
+    selection(){
+        return this.selection_store;
+    }
+
+    reset(){
+        this.selection_store.clear();
+        for(const item of this.items){
+            item.classList.remove('selected');
+        }
+    }
+
+}
+
+class SelectionStore{
+
+    constructor(){
+        this.values=new Set();
+        this.elements=new Map();
+        this.data=new Map();
+    }
+
+    add(value,element,data){
+        this.values.add(value);
+        this.elements.set(value,element);
+        this.data.set(value,data);
+        return {
+            value,element,data
+        };
+    }
+
+    remove(value){
+        const sel={value,element:this.elements.get(value),data:this.data.get(value)};
+        this.values.delete(value);
+        this.elements.delete(value);
+        this.data.delete(value);
+        return sel;
+    }
+
+    clear(){
+        this.values.clear();
+        this.elements.clear();
+        this.data.clear();
+        return this;
+    }
+
+    has(value){
+        return this.values.has(value);
+    }
+
+    toValues(){
+        return Array.from(this.values);
+    }
+
+    toElements(){
+        return Array.from(this.elements);
+    }
+
+    toData(){
+        return Array.from(this.data);
+    }
+
+    toArray(){
+        return Array.from(this.values).map(v=>({
+            value:v,
+            element:this.elements.get(v),
+            data:this.data.get(v)
+        }));
     }
 
 }

@@ -7,12 +7,14 @@
     <script type="module" src="dist/artha.min.js"></script>
 </head>
 <body>
-    <artha-form id="form-test" action="https://reqres.in/api/users" method="POST">
-        <input name="name" placeholder="Nombre">
-        <input name="job" placeholder="Trabajo">
-        <button type="submit">Enviar</button>
-        <artha-message id="msg-test"></artha-message>
-    </artha-form>
+    <artha-container action="https://api.mockfly.dev/mocks/b5a1a715-2d30-4f60-97ec-7114638083d9/users" template="item-template"></artha-container>
+    <template id="item-template">
+        <div>
+            <div data-wire="id"></div>
+            <div data-wire="name"></div>
+            <hr>
+        </div>
+    </template>
 </body>
 </html>
 
