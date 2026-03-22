@@ -206,9 +206,9 @@ export default class ArthaContainer extends HTMLElement{
         let index=0;
 
         for(const item of items){
-            const wires=item.getAttribute("data-wire").split(",");
+            const wires=item.getAttribute("data-wire").split(":");
             for(let wire of wires){
-                const [attrib_json,attrib_element,attrib_action]=wire.split(",");
+                const [attrib_json,attrib_element,attrib_action]=wire.split(":");
                 let value=attrib_json?Util.getValueByPath(data,attrib_json.replaceAll("[]","")):data[index]??"";
                 const append=attrib_action==="append";
                 const chooser=attrib_action==="chooser";
