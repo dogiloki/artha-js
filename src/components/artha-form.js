@@ -117,13 +117,11 @@ export default class ArthaForm extends HTMLElement{
                 onLoad:(xhr)=>{
                     this.dispatchEvent(new CustomEvent('load',{detail:xhr}));
                 },
-                onData:(data)=>{
+                onData:(xhr,data)=>{
                     // Respuesta procesada en formato json
-                    task.resolve(data,(json)=>{
-                        if(Util.withinRange(data.status,200,299)){
-                            this.fillFromJson(json.data??{},false);
-                        }
+                    task.resolve(xhr,(json)=>{
                         this.dispatchEvent(new CustomEvent('resolve',{detail:json}));
+                        this.fillFromJson(json.data??{},false);
                     });
                 },
                 onError:(err)=>{
