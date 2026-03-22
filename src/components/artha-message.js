@@ -14,7 +14,7 @@ export default class ArthaMessage extends HTMLElement{
         },
         SUCCESS:{
             code:1,
-            name:"suscess"
+            name:"success"
         },
         WARNING:{
             code:2,
