@@ -26,10 +26,8 @@ artha-js/
 
 Desarrollo
 
-Generar css principal
-# sass --watch src/scss/main.scss:dist/artha.min.css --style=compressed
 Actualizar css principal mientras se guardan cambios
-# npm run sass:dev
+# sass --watch src/scss/main.scss:dist/artha.min.css --style=compressed
 
 Levantar servidor en vivo que se actualiza al guardar cambios en un archivo
 # live-server --watch=. --port=8080
