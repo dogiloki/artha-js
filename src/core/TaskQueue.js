@@ -54,7 +54,7 @@ class TaskQueueItem{
     constructor(id,callback,options){
         this.id=id;
         this.callback=callback;
-        options={...this.defaults,...options};
+        options={...TaskQueue.defaults,...options};
         const {
             title,
             close,

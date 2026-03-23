@@ -53,6 +53,8 @@ export default class ArthaForm extends HTMLElement{
                 default: btn.addEventListener('click',(evt)=>this.submit());
             }
         });
+        this.querySelector('[type="submit"]')?.addEventListener('click',(evt)=>this.submit());
+        this.querySelector('[type="reset"]')?.addEventListener('click',(evt)=>this.reset());
     }
 
     // Cargar inputs dinámicos
@@ -111,7 +113,7 @@ export default class ArthaForm extends HTMLElement{
         const form_data={};
         this.element_inputs.forEach((element)=>{
             form_data[element.name]=element.type==='checkbox'?(element.checked?1:0):element.value;
-        })
+        });
         const action=this.getAttribute('action')??'';
         const method=this.getAttribute('method')??'GET';
         const id=this.getAttribute('id');

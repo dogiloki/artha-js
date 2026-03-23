@@ -52,6 +52,7 @@ export default class ArthaMessage extends HTMLElement{
     }
 
     show(message=null,type=null){
+        if(!message || type==null) return this.hidden();
         if(type) this.setAttribute("type",(typeof type==="string"?type:type.name)||"info");
         if(message) this.innerHTML=message;
         Util.modal(this,true);
