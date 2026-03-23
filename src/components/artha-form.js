@@ -37,6 +37,13 @@ export default class ArthaForm extends HTMLElement{
         this._bindEvents();
     }
 
+    connectedCallback(){
+        this.dispatchEvent(new CustomEvent('init',{
+            detail:this,
+            bubbles:true
+        }));
+    }
+
     _bindEvents(){
         // Botones
         this.querySelectorAll('button').forEach((btn)=>{
@@ -117,9 +124,9 @@ export default class ArthaForm extends HTMLElement{
                 onLoad:(xhr)=>{
                     this.dispatchEvent(new CustomEvent('load',{detail:xhr}));
                 },
-                onData:(xhr,data)=>{
+                onData:(xhr,json)=>{
                     // Respuesta procesada en formato json
-                    task.resolve(xhr,(json)=>{
+                    task.resolve(xhr,()=>{
                         this.dispatchEvent(new CustomEvent('resolve',{detail:json}));
                         this.fillFromJson(json.data??{},false);
                     });

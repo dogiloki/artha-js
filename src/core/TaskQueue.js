@@ -1,9 +1,13 @@
-import Config from "./Config.js";
 import Util from "./Util.js";
 import ArthaMessage from "../components/artha-message.js";
 
 export default class TaskQueue{
     
+    static defaults={
+        title:"Petición en proceso...",
+        close:false,
+        message:null
+    };
     static INSTNACE=null;
 
     static singleton(){
@@ -50,7 +54,7 @@ class TaskQueueItem{
     constructor(id,callback,options){
         this.id=id;
         this.callback=callback;
-        options={...Config.get("task_queue"),...options};
+        options={...this.defaults,...options};
         const {
             title,
             close,

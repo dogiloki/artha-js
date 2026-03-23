@@ -4,10 +4,26 @@
     <meta charset="UTF-8">
     <title>Prueba ArthaJS</title>
     <link rel="stylesheet" href="dist/artha.min.css">
-    <script type="module" src="dist/artha.min.js"></script>
+    <script type="module">
+        import {XHR,EventBus} from './dist/artha.min.js';
+
+        EventBus.on('artha:before-register',()=>{
+            XHR.defaults.transformResponse=(xhr)=>{
+                return {
+                    status:"sucess",
+                    message:"",
+                    data:xhr.response,
+                    errors:null,
+                    meta:null
+                };
+            };
+        });
+
+
+    </script>
 </head>
 <body>
-    <artha-container action="https://api.mockfly.dev/mocks/b5a1a715-2d30-4f60-97ec-7114638083d9/users" template="item-template"></artha-container>
+    <artha-container action="https://api.mockfly.dev/mocks/b5a1a715-2d30-4f60-97ec-7114638083d9/users" template="item-template" autoload="false"></artha-container>
     <template id="item-template">
         <div>
             <div data-wire="id"></div>
@@ -17,12 +33,3 @@
     </template>
 </body>
 </html>
-
-<script type="module">
-    import Config from './src/core/Config.js';
-    import Util from './src/core/Util.js';
-    import EventBus from './src/core/EventBus.js';
-    import TaskQueue from './src/core/TaskQueue.js';
-    import XHR from './src/core/XHR.js';
-
-</script>

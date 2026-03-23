@@ -31,6 +31,10 @@ export default class ArthaContainer extends HTMLElement{
                             }
                             return this._elements[prop];
                         case 'method': return this.getAttribute(prop)??'GET';
+                        case 'searcher':
+                        case 'selectable':
+                        case 'multiple':
+                            return this.hasAttribute(prop) && this.getAttribute(prop)!=='false';
                         default: return this.getAttribute(prop);
                     }
                 },
@@ -43,10 +47,6 @@ export default class ArthaContainer extends HTMLElement{
             const attr_val=this.getAttribute(prop);
             if(attr_val!==null) this[prop]=attr_val;
         });
-        this.pagination=this.getAttribute("pagination");
-        this.searcher=this.hasAttribute("searcher");
-        this.selectable=this.hasAttribute("selectable");
-        this.multiple=this.hasAttribute("multiple");
         this.message=this.querySelector('artha-message')??this.querySelector(this.getAttribute('message-target'))??null;
 
         // Loader
@@ -64,6 +64,13 @@ export default class ArthaContainer extends HTMLElement{
         }else{
             this.refresh();
         }
+    }
+
+    connectedCallback(){
+        this.dispatchEvent(new CustomEvent('init',{
+            detail:this,
+            bubbles:true
+        }));
     }
 
     _createLoader(){
@@ -152,9 +159,9 @@ export default class ArthaContainer extends HTMLElement{
                 onLoad:(xhr)=>{
                     this.dispatchEvent(new CustomEvent('load',{detail:xhr}));
                 },
-                onData:(xhr,data)=>{
+                onData:(xhr,json)=>{
                     // Respuesta procesada en en formato json
-                    task.resolve(xhr,(json)=>{
+                    task.resolve(xhr,()=>{
                         this.dispatchEvent(new CustomEvent('resolve',{detail:json}));
                         if(json.message){
                             this.message?.show(json.message,json.status);

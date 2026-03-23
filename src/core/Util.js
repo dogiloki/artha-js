@@ -1,6 +1,13 @@
-import Config from "./Config.js";
-
 export default class Util{
+
+    static defaults={
+        locale:"es-MX",
+        currency:"MXN",
+        money:{
+            style:"currency",
+            digits:2
+        }
+    };
     
     static getMeta(name){
         const meta=document.querySelector(`meta[name="${name}"]`);
@@ -37,9 +44,10 @@ export default class Util{
 
     static formatMoney(value,options={}){
         const {
-            locale=Config.get("locale"),
-            currency=Config.get("currency"),
-            digits=Config.get("money.digits")
+            locale=this.defaults.locale,
+            currency=this.defaults.currency,
+            digits=this.defaults.money.digits,
+            style=this.defaults.money.style
         }=options;
         value=value.toString();
         let amount=Number(value.replace(/[^0-9.]/g,""));
@@ -48,7 +56,7 @@ export default class Util{
         }
         let minimum=0;
         return new Intl.NumberFormat(locale,{
-            style:"currency",
+            style:style,
             currency,
             minimum,
             digits

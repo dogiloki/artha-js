@@ -1,10 +1,34 @@
-import Config from './Config.js';
 import Util from './Util.js';
 
 export default class XHR{
 
+    static defaults={
+        method:"GET",
+        url:null,
+        uri:"",
+        headers:{},
+        data:{},
+        query:{},
+        files:{},
+        response_type:"json",
+        with_credentials:false,
+        timeout:0,
+        retry:false,
+        retry_delay:5000,
+        transformResponse:(xhr)=>{
+            return xhr.response;
+        },
+        onLoad:()=>{},
+        onData:()=>{},
+        onError:()=>{},
+        onTimeout:()=>{},
+        onProgress:()=>{},
+        onAbort:()=>{},
+        onAction:()=>{},
+    };
+
     static request(options){
-        options={...Config.get("xhr"),...options};
+        options={...this.defaults,...options};
         const {
             method,
             url,
@@ -18,6 +42,7 @@ export default class XHR{
             timeout,
             retry,
             retry_delay,
+            transformResponse,
             onLoad,
             onData,
             onError,
@@ -26,6 +51,14 @@ export default class XHR{
             onAbort,
             onAction
         }=options;
+        const safeTransform=(xhr)=>{
+            try{
+                return transformResponse(xhr);
+            }catch(ex){
+                console.error("transformResponse error:",ex);
+                return xhr.response;
+            }
+        };
         url??="/"+uri;
         const xhr=new XMLHttpRequest();
         const query_string=Object.keys(query).length?"?"+Object.entries(query)
@@ -71,35 +104,37 @@ export default class XHR{
         xhr.addEventListener("load",()=>{
             onLoad(xhr);
             if(Util.withinRange(xhr.status,200,299)){
-                onData(xhr,xhr.response);
+                onData(xhr,safeTransform(xhr));
             }else{
-                onError(xhr.response);
+                onError(safeTransform(xhr));
             }
         });
 
         // Error
         xhr.addEventListener("error",()=>{
+            const retry_options={...options};
             if(retry){
                 setTimeout(()=>{
-                    XHR.request(options);
+                    XHR.request(retry_options);
                 },retry_delay);
             }
-            onError(xhr.response);
+            onError(safeTransform(xhr));
         });
 
         // Aborto
         xhr.addEventListener("abort",()=>{
-            onAbort(xhr.response);
+            onAbort(safeTransform(xhr));
         });
 
         // Tiempo de espera
         xhr.addEventListener("timeout",()=>{
+            const retry_options={...options};
             if(retry){
                 setTimeout(()=>{
-                    XHR.request(options);
+                    XHR.request(retry_options);
                 },retry_delay);
             }
-            onTimeout(xhr.response);
+            onTimeout(safeTransform(xhr));
         });
 
         // Progreso

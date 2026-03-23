@@ -1,4 +1,3 @@
-import Config from "../core/Config.js";
 import Util from "../core/Util.js";
 
 export default class ArthaMessage extends HTMLElement{
@@ -30,6 +29,10 @@ export default class ArthaMessage extends HTMLElement{
     connectedCallback(){
         this.type=this.getAttribute("type")||"info";
         this.hidden();
+        this.dispatchEvent(new CustomEvent('init',{
+            detail:this,
+            bubbles:true
+        }));
     }
 
     error(message=null){
