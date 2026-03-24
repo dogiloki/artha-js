@@ -1,9 +1,10 @@
+import BaseComponent from '../abstract/BaseComponent.js';
 import Util from '../core/Util.js';
 import XHR from '../core/XHR.js';
 import TaskQueue from '../core/TaskQueue.js';
 import ArthaMessage from './artha-message.js';
 
-export default class ArthaForm extends HTMLElement{
+export default class ArthaForm extends BaseComponent{
     
     constructor(){
         super();
@@ -35,13 +36,6 @@ export default class ArthaForm extends HTMLElement{
         });
 
         this._bindEvents();
-    }
-
-    connectedCallback(){
-        this.dispatchEvent(new CustomEvent('init',{
-            detail:this,
-            bubbles:true
-        }));
     }
 
     _bindEvents(){

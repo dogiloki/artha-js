@@ -1,6 +1,7 @@
+import BaseComponent from '../abstract/BaseComponent.js';
 import Util from "../core/Util.js";
 
-export default class ArthaMessage extends HTMLElement{
+export default class ArthaMessage extends BaseComponent{
 
     static TYPE=Object.freeze({
         ERROR:{
@@ -24,15 +25,8 @@ export default class ArthaMessage extends HTMLElement{
 
     constructor(){
         super();
-    }
-
-    connectedCallback(){
-        this.type=this.getAttribute("type")||"info";
+        this.type=this.getAttribute("type")||ArthaMessage.TYPE.INFO.name;
         this.hidden();
-        this.dispatchEvent(new CustomEvent('init',{
-            detail:this,
-            bubbles:true
-        }));
     }
 
     error(message=null){
@@ -53,7 +47,7 @@ export default class ArthaMessage extends HTMLElement{
 
     show(message=null,type=null){
         if(!message || type==null) return this.hidden();
-        if(type) this.setAttribute("type",(typeof type==="string"?type:type.name)||"info");
+        if(type) this.setAttribute("type",(typeof type==="string"?type:type.name)||ArthaMessage.TYPE.INFO.name);
         if(message) this.innerHTML=message;
         Util.modal(this,true);
     }

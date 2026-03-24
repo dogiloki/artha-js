@@ -1,13 +1,25 @@
+import BaseComponent from '../abstract/BaseComponent.js';
 import Util from '../core/Util.js';
 import EventBus from '../core/EventBus.js';
 import XHR from '../core/XHR.js';
 import TaskQueue from '../core/TaskQueue.js';
 import ArthaMessage from './artha-message.js';
 
-export default class ArthaContainer extends HTMLElement{
+export default class ArthaContainer extends BaseComponent{
 
     constructor(){
-        super();
+        super(
+            ["template","action","action_router","method",
+            "pagination","message","searcher","selectable","multiple"],
+            {
+                booleans:['searcher','selectable','multiple'],
+                element_refs:['template','mesage'],
+                defaults:{
+                    method:'GET',
+                    pagination:10
+                }
+            }
+        );
 
         this.onRenderItem=(element,data)=>{};
         this.onRenderItemFill=(element,data,fill_element,fill_data)=>{};
@@ -17,37 +29,8 @@ export default class ArthaContainer extends HTMLElement{
         this.items={};
         this.selection_store=new SelectionStore();
         this.response_type='json';
-        this._elements={};
-        this._props=[
-            "template","action","action_router","method",
-            "pagination","message","searcher","selectable","multiple"];
-        this._props.forEach((prop)=>{
-            Object.defineProperty(this,prop,{
-                get:()=>{
-                    switch(prop){
-                        case 'template':
-                            if(!this._elements[prop] || this._elements[prop].id!==this.getAttribute(prop)){
-                                this._elements[prop]=document.getElementById(this.getAttribute(prop));
-                            }
-                            return this._elements[prop];
-                        case 'method': return this.getAttribute(prop)??'GET';
-                        case 'searcher':
-                        case 'selectable':
-                        case 'multiple':
-                            return this.hasAttribute(prop) && this.getAttribute(prop)!=='false';
-                        default: return this.getAttribute(prop);
-                    }
-                },
-                set:(value)=>{
-                    if(this.getAttribute(prop)!==value){
-                        this.setAttribute(prop,value);
-                    }
-                }
-            });
-            const attr_val=this.getAttribute(prop);
-            if(attr_val!==null) this[prop]=attr_val;
-        });
-        this.message=this.querySelector('artha-message')??this.querySelector(this.getAttribute('message-target'))??null;
+        this.message??=this.querySelector('artha-message')??this.querySelector(this.getAttribute('message-target'))??null;
+        this.id=this.getAttribute('id')??'container-'+BaseComponent.counter;
 
         // Loader
         this.loader_container=this._createLoader();
@@ -64,13 +47,6 @@ export default class ArthaContainer extends HTMLElement{
         }else{
             this.refresh();
         }
-    }
-
-    connectedCallback(){
-        this.dispatchEvent(new CustomEvent('init',{
-            detail:this,
-            bubbles:true
-        }));
     }
 
     _createLoader(){
@@ -146,8 +122,7 @@ export default class ArthaContainer extends HTMLElement{
     getData(search=null){
         if(!this.action) return;
         const query=search?{search}:{};
-        const id=this.getAttribute("id")??Util.numberRandom(10000,99999);
-        this.task_queue.loadTask(`container-${id}`,null,(task)=>{
+        this.task_queue.loadTask(`container-${this.id}`,null,(task)=>{
             XHR.request({
                 url:this.action,
                 method:this.method,

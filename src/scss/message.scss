@@ -8,19 +8,19 @@ artha-message{
     cursor: default;
 
     &[type="error"]{
-        background-color: $msg_background_error_color;
-        color: $msg_text_error_color;
+        background-color: $msg-background-error-color;
+        color: $msg-text-error-color;
     }
     &[type="success"]{
-        background-color: $msg_background_success_color;
-        color: $msg_text_success_color;
+        background-color: $msg-background-success-color;
+        color: $msg-text-success-color;
     }
     &[type="warning"]{
-        background-color: $msg_background_warning_color;
-        color: $msg_text_warning_color;
+        background-color: $msg-background-warning-color;
+        color: $msg-text-warning-color;
     }
     &[type="info"]{
-        background-color: $msg_background_info_color;
-        color: $msg_text_info_color;
+        background-color: $msg-background-info-color;
+        color: $msg-text-info-color;
     }
 }
