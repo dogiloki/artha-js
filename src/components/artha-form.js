@@ -104,6 +104,10 @@ export default class ArthaForm extends BaseComponent{
 
     // Enviar formulario
     submit(){
+        if(!this.checkValidity()){
+            this.message.warning('Formulario incompleto');
+            return;
+        }
         const form_data={};
         this.element_inputs.forEach((element)=>{
             form_data[element.name]=element.type==='checkbox'?(element.checked?1:0):element.value;

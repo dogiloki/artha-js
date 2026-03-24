@@ -131,20 +131,21 @@ class TaskQueueItem{
             }
         }
         message=message||json.message||"Operación completada";
-        if(message){
-            this.message_element?.show(message,json?.status??null);
-        }
         // Validar respuesta http
         if(Util.withinRange(data.status,200,299)){
-            if(!message){
+            if(message){
+                this.message_element?.show(message,json?.status??null);
+            }else{
                 this.message_element?.success("Operación completada");
             }
-            this.status="success";
+            this.status=json?.status||"success";
         }else{
-            if(!message){
+            if(message){
+                this.message_element?.show(message,json?.status??null);
+            }else{
                 this.message_element?.error("Error en la respuesta del servidor");
             }
-            this.status="error";
+            this.status=json?.status||"error";
             this.onFinalize();
             return;
         }

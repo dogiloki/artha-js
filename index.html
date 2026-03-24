@@ -10,8 +10,6 @@
         EventBus.on('artha:before-register',()=>{
             XHR.defaults.transformResponse=(xhr)=>{
                 return {
-                    status:"sucess",
-                    message:"",
                     data:xhr.response,
                     errors:null,
                     meta:null
