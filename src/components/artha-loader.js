@@ -29,7 +29,7 @@ export default class ArthaLoader extends BaseComponent{
             ['type','text'],
             {
                 defaults:{
-                    type:ArthaLoader.TYPE.DOTS.name,
+                    type:ArthaLoader.TYPE.RING.name,
                     text:TaskQueue.defaults.title
                 },
                 resolvers:{

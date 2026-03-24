@@ -50,22 +50,7 @@ export default class ArthaContainer extends BaseComponent{
     }
 
     _createLoader(){
-        return Util.createElement('div',(div)=>{
-            div.classList.add('loader-container');
-            div.setAttribute('title','Procesando...');
-            div.appendChild(Util.createElement('div',(div2)=>{
-                div2.classList.add('background-overlay');
-            }));
-            div.appendChild(Util.createElement('div',(div3)=>{
-                div3.classList.add('loader','active');
-            }));
-            const img_container=div.appendChild(Util.createElement('div',(div4)=>{
-                div4.classList.add('img-container');
-            }));
-            img_container.appendChild(Util.createElement('img',(img)=>{
-                img.src='/assets/logo.png';
-            }));
-        });
+        return Util.createElement('artha-loader');
     }
 
     _handleSearch(evt){
