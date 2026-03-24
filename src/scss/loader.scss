@@ -1,0 +1,70 @@
+@use './colors.scss' as *;
+
+artha-loader{
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+
+    .loader-content{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+    }
+    &[type="dots"]{
+        .loader-content{
+
+            >div{
+                width: 10px;
+                height: 10px;
+                background-color: $loader-primary-color;
+                border-radius: 50%;
+                animation: dot 1.2s infinite ease-in-out;
+
+                &:nth-of-type(1){
+                    animation-delay: 0s;
+                }
+                &:nth-of-type(2){
+                    animation-delay: 0.2s;
+                }
+                &:nth-of-type(3){
+                    animation-delay: 0.4s;
+                }
+            }
+        }
+    }
+    &[type="ring"]{
+        .loader-content{
+
+            >div{
+                width: 32px;
+                height: 32px;
+                border: 3px solid $loader-secondary-color;
+                border-top-color: $loader-primary-color;
+                border-radius: 50%;
+                animation: ring 0.8s linear infinite;
+            }
+        }
+    }
+    span{
+        font-size: 1rem;
+        color: $loader-muted-color;
+    }
+}
+
+@keyframes dot{
+    0%,100%{
+        transform: scale(0.8);
+        opacity: 0.4;
+    }
+    50%{
+        transform: scale(1.2);
+        opacity: 1;
+    }
+}
+
+@keyframes ring{
+    to{
+        transform: rotate(360deg);
+    }
+}

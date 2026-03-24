@@ -20,7 +20,8 @@ export default class BaseComponent extends HTMLElement{
         this._special_props={
             booleans:[], // Propiedades booleanas
             element_refs:[], // Propiedades de referencian elementos por ID
-            defaults:{} // Propiedades con valor por defecto
+            defaults:{}, // Propiedades con valor por defecto
+            resolvers:{} // Propiedades con un callback
         };
         this.configureProperties(props,options);
     }
@@ -56,6 +57,7 @@ export default class BaseComponent extends HTMLElement{
             booleans:options.booleans||[],
             element_refs:options.element_refs||[],
             defaults:options.defaults||{},
+            resolvers:options.resolvers||{}
         };
         this._setupProperties();
     }
@@ -84,6 +86,11 @@ export default class BaseComponent extends HTMLElement{
             }
             return this._elements[prop];
         }
+        // Propiedades con callback
+        if(this._special_props.resolvers[prop]){
+            const raw_value=this.getAttribute(prop);
+            return this._special_props.resolvers[prop].get(raw_value,this);
+        }
         // Propiedad booleana
         if(this._special_props.booleans.includes(prop)){
             return this.hasAttribute(prop) && this.getAttribute(prop)!=='false';
@@ -110,6 +117,9 @@ export default class BaseComponent extends HTMLElement{
             this._elements[prop]=value;
             this._triggerUpdate(prop,value);
             return;
+        }else if(this._special_props.resolvers[prop]){
+            new_value=this._special_props.resolvers[prop].set(value,this);
+            this._triggerUpdate(prop,value);
         }else{
             new_value=String(value);
         }

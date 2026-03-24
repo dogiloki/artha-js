@@ -9,7 +9,9 @@
     "src"
   ],
   "scripts": {
-    "dev": "sass --watch src/scss/main.scss:dist/artha.css",
+    "dev:css": "sass --watch src/scss/main.scss:dist/artha.min.css --style=compressed",
+    "dev:server": "live-server --watch=. --port=8080",
+    "dev": "concurrently \"npm run dev:css\" \"npm run dev:server\"",
     "build": "sass src/scss/main.scss dist/artha.min.css --style=compressed"
   },
   "keywords": [
@@ -27,5 +29,10 @@
   "bugs": {
     "url": "https://github.com/dogiloki/artha-js/issues"
   },
-  "homepage": "https://github.com/dogiloki/artha-js#readme"
+  "homepage": "https://github.com/dogiloki/artha-js#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "live-server": "^1.2.2",
+    "sass": "^1.98.0"
+  }
 }
