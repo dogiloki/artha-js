@@ -73,9 +73,7 @@ export default class Util{
 
     static createElement(type,value=null,options={}){
         const el=document.createElement(type,options);
-        if(value!==null){
-            return el;
-        }
+        if(value===null) return el;
         if(Array.isArray(value)){
             value.forEach((item)=>{
                 el.appendChild(item); 
