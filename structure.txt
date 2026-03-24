@@ -1,29 +1,3 @@
-artha-js/
-│
-├── src/
-│   ├── core/
-│   │   ├── TaskQueue.js
-│   │   ├── XHR.js
-│   │   ├── EventBus.js
-│   │   └── Util.js
-│   │
-│   ├── components/
-│   │   ├── DynamicContainer.js
-│   │   └── DynamicForm.js
-│   │
-│   └── index.js
-│
-├── dist/
-│   └── artha.min.js
-│
-├── examples/
-│   └── basic-spa/
-│
-├── README.md
-├── package.json
-└── LICENSE
-
-
 Desarrollo
 
 Actualizar css principal mientras se guardan cambios
