@@ -7,10 +7,16 @@ import ArthaMessage from './artha-message.js';
 export default class ArthaForm extends BaseComponent{
     
     constructor(){
-        super();
+        super([
+            'action','method','response_type','disable_submit'
+        ],{
+            booleans:['disable_submit'],
+            defaults:{
+                'response_type':'json'
+            }
+        });
+        this.response_type='dsa';
         this.task_queue=TaskQueue.singleton();
-        this.response_type=this.getAttribute('response-type')??'json';
-        this.disable_submit=this.hasAttribute('disable-submit');
         this.message=this.querySelector('artha-message')??this.querySelector(this.getAttribute('message-target'))??null;
         if(!this.message){
             this.message=Util.createElement('artha-message');
@@ -112,13 +118,11 @@ export default class ArthaForm extends BaseComponent{
         this.element_inputs.forEach((element)=>{
             form_data[element.name]=element.type==='checkbox'?(element.checked?1:0):element.value;
         });
-        const action=this.getAttribute('action')??'';
-        const method=this.getAttribute('method')??'GET';
         const id=this.getAttribute('id');
         this.task_queue.loadTask(`form-${id}`,null,(task)=>{
             XHR.request({
-                url:action,
-                method:method,
+                url:this.action,
+                method:this.method,
                 data:form_data,
                 response_type:this.response_type,
                 onLoad:(xhr)=>{

@@ -43,12 +43,13 @@ export default class BaseComponent extends HTMLElement{
 
     attributeChangedCallback(name,old_value,new_value){
         if(old_value===new_value) return;
-        if(this._props.includes(name)){
-            this._triggerUpdate(name,this._getPropertyValue(name));
+        const attr=this._valueToAttr(name);
+        if(this._props.includes(attr)){
+            this._triggerUpdate(attr,this._getPropertyValue(attr));
         }
-        this.onAttributeChanged(name,old_value,new_value);
+        this.onAttributeChanged(attr,old_value,new_value);
     }
-    onAttributeChanged(name,old_value,new_value){}
+    onAttributeChanged(prop,old_value,new_value){}
 
     configureProperties(props,options={}){
         if(props==null) return;
@@ -60,6 +61,30 @@ export default class BaseComponent extends HTMLElement{
             resolvers:options.resolvers||{}
         };
         this._setupProperties();
+    }
+
+    _getAttribute(attr){
+        return this.getAttribute(this._valueToAttr(attr));
+    }
+
+    _setAttribute(attr,value){
+        return this.setAttribute(this._valueToAttr(attr),value);
+    }
+
+    _removeAttribute(attr){
+        return this.removeAttribute(this._valueToAttr(attr));
+    }
+
+    _hasAttribute(attr){
+        return this.hasAttribute(this._valueToAttr(attr));
+    }
+
+    _valueToAttr(value){
+        return value.replace(/_/g,'-');
+    }
+
+    _attrToValue(value){
+        return value.replace(/-/g,'_');
     }
 
     _setupProperties(){
@@ -78,7 +103,7 @@ export default class BaseComponent extends HTMLElement{
     _getPropertyValue(prop){
         // Propiedade que referencia un elemento por ID
         if(this._special_props.element_refs.includes(prop)){
-            const element_id=this.getAttribute(prop);
+            const element_id=this._getAttribute(prop);
             if(!element_id) return null;
             // Cache para evitar múltiples búsquedas en el DOM
             if(!this._elements[prop] || this._elements[prop].id!==element_id){
@@ -88,15 +113,15 @@ export default class BaseComponent extends HTMLElement{
         }
         // Propiedades con callback
         if(this._special_props.resolvers[prop]){
-            const raw_value=this.getAttribute(prop);
+            const raw_value=this._getAttribute(prop);
             return this._special_props.resolvers[prop].get(raw_value,this);
         }
         // Propiedad booleana
         if(this._special_props.booleans.includes(prop)){
-            return this.hasAttribute(prop) && this.getAttribute(prop)!=='false';
+            return this._hasAttribute(prop) && this._getAttribute(prop)!=='false';
         }
         // Propiedad con valor por defecto
-        const value=this.getAttribute(prop);
+        const value=this._getAttribute(prop);
         if(value===null && this._special_props.defaults[prop]!==undefined){
             return this._special_props.defaults[prop];
         }
@@ -105,7 +130,7 @@ export default class BaseComponent extends HTMLElement{
 
     _setPropertyValue(prop,value){
         if(this._updating) return;
-        const current_value=this.getAttribute(prop);
+        const current_value=this._getAttribute(prop);
         let new_value=value;
         // Convertir a string para atributos
         if(value===null || value===undefined){
@@ -126,9 +151,9 @@ export default class BaseComponent extends HTMLElement{
         // Solo actualizar si cambió
         if(current_value!==new_value){
             if(new_value===null){
-                this.removeAttribute(prop);
+                this._removeAttribute(prop);
             }else{
-                this.setAttribute(prop,new_value);
+                this._setAttribute(prop,new_value);
             }
             this._triggerUpdate(prop,value);
         }
@@ -136,7 +161,7 @@ export default class BaseComponent extends HTMLElement{
 
     _initializeProperties(){
         this._props.forEach((prop)=>{
-            const attrib_value=this.getAttribute(prop);
+            const attrib_value=this._getAttribute(prop);
             if(attrib_value!==null){
                 this[prop]=this._getPropertyValue(prop);
             }else if(this._special_props.defaults[prop]!==undefined){
