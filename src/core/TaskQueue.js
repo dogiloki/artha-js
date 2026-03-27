@@ -153,11 +153,6 @@ class TaskQueueItem{
         this.onFinalize();
     }
 
-    // Cancelar si usa XHR
-    cancel(){
-        if(this.xhr) this.xhr.abort();
-    }
-
     // Resolver manualmente
     resolve(data,callback){
         this.resolve_callback=callback;

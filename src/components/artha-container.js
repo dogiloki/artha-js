@@ -13,7 +13,7 @@ export default class ArthaContainer extends BaseComponent{
             "pagination","message","searcher","selectable","multiple"],
             {
                 booleans:['searcher','selectable','multiple'],
-                element_refs:['template','mesage'],
+                element_refs:['template','message'],
                 defaults:{
                     method:'GET',
                     pagination:10
@@ -26,6 +26,7 @@ export default class ArthaContainer extends BaseComponent{
         this.onRenderItemIter=(element,data,iter_element,iter_data)=>{};
 
         this.task_queue=TaskQueue.singleton();
+        this._current_xhr=null;
         this.items={};
         this.selection_store=new SelectionStore();
         this.response_type='json';
@@ -35,15 +36,20 @@ export default class ArthaContainer extends BaseComponent{
         // Loader
         this.loader_container=this._createLoader();
 
+        // Input de búsqueda
+        if(this.searcher){
+            this.searcher_input=Util.createElement('input-search');
+            this.appendChild(this.searcher_input);
+            this.searcher_input.addEventListener('search',(evt)=>this._handleSearch(evt));
+            this.searcher_input.addEventListener('cancel-search',(evt)=>this._cancelSearch(evt));
+        }
+
         // Contenido
         this.content=this.querySelector(':scope > dynamic-content') || this.appendChild(document.createElement('dynamic-content'));
         this._content=this.content.children[0];
 
-        // Input de búsqueda
-        this.input_search=this.querySelector("input-search");
-        if(this.input_search){
-            this.input_search.addEventListener('search',(evt)=>this._handleSearch(evt));
-            this.refresh(this.input_search.value);
+        if(this.searcher){
+            this.refresh(this.searcher_input.value);
         }else{
             this.refresh();
         }
@@ -55,13 +61,18 @@ export default class ArthaContainer extends BaseComponent{
 
     _handleSearch(evt){
         if(this.action){
-            this.refresh(evt.detail.query);
+            return this.refresh(evt.detail.query);
         }else{
             const search=evt.detail.query?.toLowerCase()??'';
             for(const item of this.items??[]){
                 Util.modal(item,item.textContent.toLowerCase().includes(search));
             }
         }
+    }
+
+    _cancelSearch(evt){
+        this._current_xhr?.abort();
+        this._current_xhr=null;
     }
 
     // value - getter/setter
@@ -107,8 +118,8 @@ export default class ArthaContainer extends BaseComponent{
     getData(search=null){
         if(!this.action) return;
         const query=search?{search}:{};
-        this.task_queue.loadTask(`container-${this.id}`,null,(task)=>{
-            XHR.request({
+        return this.task_queue.loadTask(`container-${this.id}`,null,(task)=>{
+            this._current_xhr=XHR.request({
                 url:this.action,
                 method:this.method,
                 headers:{
@@ -120,6 +131,7 @@ export default class ArthaContainer extends BaseComponent{
                     this.dispatchEvent(new CustomEvent('load',{detail:xhr}));
                 },
                 onData:(xhr,json)=>{
+                    this._current_xhr=null;
                     // Respuesta procesada en en formato json
                     task.resolve(xhr,()=>{
                         this.dispatchEvent(new CustomEvent('resolve',{detail:json}));
@@ -132,6 +144,11 @@ export default class ArthaContainer extends BaseComponent{
                 onError:(err)=>{
                     this.message?.error(err??"Error de conexión");
                     task.onFinalize();
+                    this._cancelSearch();
+                },
+                onAbort:(err)=>{
+                    task.onFinalize();
+                    this._cancelSearch();
                 }
             });
         },{
@@ -146,7 +163,7 @@ export default class ArthaContainer extends BaseComponent{
             if(this._content) this.content.appendChild(this._content);
             this.content.appendChild(this.loader_container);
         }
-        this.getData(search);
+        return this.getData(search);
     }
 
     refreshWithData(data){

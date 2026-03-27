@@ -1,0 +1,21 @@
+@use './colors.scss' as *;
+
+.icon{
+    width: 1.2rem;
+    height: 1.2rem;
+    display: inline-block;
+    vertical-align: middle;
+    background-color: $black;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+
+    &.search{
+        mask-image: url("./assets/icons/search.svg");
+        -webkit-mask-image: url("./assets/icons/search.svg");
+        cursor: pointer;
+    }
+}

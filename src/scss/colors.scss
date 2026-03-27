@@ -1,3 +1,22 @@
+// Colores generales
+$primary-color: #06c;
+$secondary-color: #2c3e50;
+$primary-color-hover: #007bff;
+$secondary-color-hover: #2c3e50;
+$black1: #000000;
+$black2: #202020;
+$black3: #404040;
+$black4: #808080;
+$black: $black1;
+$white1: #ffffff;
+$white2: #f5f5f5;
+$white3: #e0e0e0;
+$white4: #bfbfbf;
+$white: $white1;
+$valid-color: #008000;
+$invalid-color: #FF0000;
+$neutral-color: #353535;
+
 // Colores de ventanas de mensajes
 $msg-text-error-color: #b94a48;
 $msg-text-success-color: #468847;
@@ -8,6 +27,16 @@ $msg-background-success-color: #dff0d8;
 $msg-background-warning-color: #fcf8e3;
 $msg-background-info-color: #d9edf7;
 
+// Colores para carga
 $loader-primary-color: #3b82f6;
 $loader-secondary-color: #93c5fd;
 $loader-muted-color: #5b6e8c;
+
+// Colores para botones
+$add-button-background: #006400;
+$add-button-background-hover: #004b00;
+$edit-button-background: #004080;
+$edit-button-background-hover: #003060;
+$delete-button-background: #8b0000;
+$delete-button-background-hover: #6b0000;
+$disabled-button-background: #dddddd;
