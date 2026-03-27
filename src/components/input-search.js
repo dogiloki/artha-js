@@ -36,17 +36,10 @@ export default class InputSearch extends BaseComponent{
     _ensureStructure(){
         this.icon=InputSearch.defaults.icon;
         this.style.display="flex";
-        this.appendChild(Util.createElement('div',(container)=>{
-            container.classList.add('input-container');
-            this.input=container.appendChild(Util.createElement('input',(input)=>{
-                input.classList.add('input-field');
-                input.type="search";
-                input.placeholder="";
-            }));
-            container.appendChild(Util.createElement('label',(label)=>{
-                label.classList.add('input-label');
-                label.textContent=this.text;
-            }));
+        this.input=this.appendChild(Util.createElement('input',(input)=>{
+            input.classList.add('input-field');
+            input.type="search";
+            input.placeholder=this.text;
         }));
         this.button=this.appendChild(Util.createElement('button',async(button)=>{
             button.classList.add('button-search');
