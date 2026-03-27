@@ -16,12 +16,15 @@ export default class BaseComponent extends HTMLElement{
         this._updating=false;
         // Mapeo de atributos
         this._props=[];
+        // Mapeo de propiedade no reflejadas como atributos
+        this._memory={};
         // Mapeo para indicar comportamiento especiales en el mapeo de atributos
         this._special_props={
             booleans:[], // Propiedades booleanas
             element_refs:[], // Propiedades de referencian elementos por ID
             defaults:{}, // Propiedades con valor por defecto
-            resolvers:{} // Propiedades con un callback
+            resolvers:{}, // Propiedades con un callback
+            reflect:{} // Guardar en memoria y no llamar a setAttribute y getAttribute
         };
         this.configureProperties(props,options);
     }
@@ -58,9 +61,14 @@ export default class BaseComponent extends HTMLElement{
             booleans:options.booleans||[],
             element_refs:options.element_refs||[],
             defaults:options.defaults||{},
-            resolvers:options.resolvers||{}
+            resolvers:options.resolvers||{},
+            reflect:options.reflect||{}
         };
         this._setupProperties();
+    }
+
+    _isReflected(prop){
+        return this._special_props.reflect[prop]!==false;
     }
 
     _getAttribute(attr){
@@ -101,6 +109,16 @@ export default class BaseComponent extends HTMLElement{
     }
 
     _getPropertyValue(prop){
+        // Propiedades que son se refleja como atributos
+        if(!this._isReflected(prop)){
+            if(prop in this._memory){
+                return this._memory[prop];
+            }
+            if(this._special_props.defaults[prop]!==undefined){
+                return this._special_props.defaults[prop];
+            }
+            return null;
+        }
         // Propiedade que referencia un elemento por ID
         if(this._special_props.element_refs.includes(prop)){
             const element_id=this._getAttribute(prop);
@@ -132,6 +150,12 @@ export default class BaseComponent extends HTMLElement{
 
     _setPropertyValue(prop,value){
         if(this._updating) return;
+        // Propiedades que son se refleja como atributos
+        if(this._isReflected(prop)===false){
+            this._memory[prop]=value;
+            this._triggerUpdate(prop,value);
+            return;
+        }
         const current_value=this._getAttribute(prop);
         let new_value=value;
         // Convertir a string para atributos
@@ -163,6 +187,12 @@ export default class BaseComponent extends HTMLElement{
 
     _initializeProperties(){
         this._props.forEach((prop)=>{
+            if(this._isReflected(prop)===false){
+                if(this._special_props.defaults[prop]!==undefined){
+                    this._memory[prop]=this._special_props.defaults[prop];
+                }
+                return;
+            }
             const attrib_value=this._getAttribute(prop);
             if(attrib_value!==null){
                 this[prop]=this._getPropertyValue(prop);

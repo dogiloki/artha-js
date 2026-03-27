@@ -3,20 +3,24 @@ import Util from '../core/Util.js';
 import EventBus from '../core/EventBus.js';
 import XHR from '../core/XHR.js';
 import TaskQueue from '../core/TaskQueue.js';
-import ArthaMessage from './artha-message.js';
 
 export default class ArthaContainer extends BaseComponent{
 
+    static defaults={
+        method:'GET',
+        pagination:10,
+        page:1,
+    };
+
     constructor(){
         super(
-            ["template","action","action_router","method",
+            ["template","action","action_router","method","page","search",
             "pagination","message","searcher","selectable","multiple"],
             {
                 booleans:['searcher','selectable','multiple'],
                 element_refs:['template','message'],
-                defaults:{
-                    method:'GET',
-                    pagination:10
+                reflect:{
+                    search:false
                 }
             }
         );
@@ -32,6 +36,13 @@ export default class ArthaContainer extends BaseComponent{
         this.response_type='json';
         this.message??=this.querySelector('artha-message')??this.querySelector(this.getAttribute('message-target'))??null;
         this.id=this.getAttribute('id')??'container-'+BaseComponent.counter;
+        if(this.hasPagination()){
+            this.pagination=this.pagination||ArthaContainer.defaults.pagination;
+            this.page=this.page||ArthaContainer.defaults.page;
+        }
+        if(this.hasAction()){
+            this.method=this.method||ArthaContainer.defaults.method;
+        }
 
         // Loader
         this.loader_container=this._createLoader();
@@ -48,10 +59,12 @@ export default class ArthaContainer extends BaseComponent{
         this.content=this.querySelector(':scope > dynamic-content') || this.appendChild(document.createElement('dynamic-content'));
         this._content=this.content.children[0];
 
-        if(this.searcher){
-            this.refresh(this.searcher_input.value);
-        }else{
-            this.refresh();
+        if(this.hasAction()){
+            if(this.searcher){
+                this.refresh(this.searcher_input.value);
+            }else{
+                this.refresh();
+            }
         }
     }
 
@@ -60,11 +73,12 @@ export default class ArthaContainer extends BaseComponent{
     }
 
     _handleSearch(evt){
+        this.page=1;
         if(this.action){
             return this.refresh(evt.detail.query);
         }else{
             const search=evt.detail.query?.toLowerCase()??'';
-            for(const item of this.items??[]){
+            for(const item of this.items){
                 Util.modal(item,item.textContent.toLowerCase().includes(search));
             }
         }
@@ -116,8 +130,18 @@ export default class ArthaContainer extends BaseComponent{
     }
 
     getData(search=null){
+        this.search=search;
         if(!this.action) return;
-        const query=search?{search}:{};
+        let query={};
+        if(this.hasPagination()){
+            query={
+                pagination:this.pagination,
+                page:this.page
+            };
+        }
+        if(search){
+            query['search']=search;
+        }
         return this.task_queue.loadTask(`container-${this.id}`,null,(task)=>{
             this._current_xhr=XHR.request({
                 url:this.action,
@@ -156,7 +180,42 @@ export default class ArthaContainer extends BaseComponent{
         });
     }
 
+    hasAction(){
+        return this.hasAttribute('action');
+    }
+
+    hasPagination(){
+        return this.hasAttribute('pagination');
+    }
+
+    nextPage(){
+        if(!this.hasPagination()) return;
+        this.page+=1;
+        return this.refresh(this.search);
+    }
+
+    prevPage(){
+        if(!this.hasPagination()) return;
+        if(this.page>1){
+            this.page-=1;
+        }
+        return this.refresh(this.search);
+    }
+
+    goToPage(page){
+        page=Number(page);
+        if(!this.hasPagination() || !Number.isInteger(page) || page<1) return;
+        this.page=page;
+        return this.refresh(this.search);
+    }
+
+    resetPagination(refresh=false){
+        this.page=1;
+        if(refresh) return this.refresh(this.search);
+    }
+
     refresh(search=null){
+        this.search=search;
         this.loader_container.remove();
         if(this.template){
             this.content.innerHTML="";
