@@ -104,7 +104,9 @@ export default class BaseComponent extends HTMLElement{
         // Propiedade que referencia un elemento por ID
         if(this._special_props.element_refs.includes(prop)){
             const element_id=this._getAttribute(prop);
-            if(!element_id) return null;
+            if(!element_id){
+                return this._elements[prop]??null;
+            }
             // Cache para evitar múltiples búsquedas en el DOM
             if(!this._elements[prop] || this._elements[prop].id!==element_id){
                 this._elements[prop]=document.getElementById(element_id);
