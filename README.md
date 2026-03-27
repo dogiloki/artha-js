@@ -7,6 +7,7 @@ Mini librería para construir interfaces HTML reactivas con Web Components, peti
 - enviar formularios por XMLHttpRequest
 - renderizar listas o bloques desde respuestas JSON
 - mostrar loaders y mensajes de estado
+- buscar con debounce sobre contenedores remotos
 - coordinar eventos globales entre componentes
 
 ## Contenido
@@ -34,6 +35,7 @@ La librería exporta estas piezas:
 - `ArthaLoader`: componente visual de carga
 - `ArthaContainer`: componente para cargar y renderizar datos
 - `ArthaForm`: formulario con envío asíncrono
+- `InputSearch`: componente de búsqueda con debounce
 
 Al importar `dist/artha.min.js`, la librería registra automáticamente estos custom elements:
 
@@ -41,6 +43,7 @@ Al importar `dist/artha.min.js`, la librería registra automáticamente estos cu
 - `artha-form`
 - `artha-message`
 - `artha-loader`
+- `input-search`
 
 ## Instalación
 
@@ -61,7 +64,8 @@ import {
   ArthaForm,
   ArthaContainer,
   ArthaMessage,
-  ArthaLoader
+  ArthaLoader,
+  InputSearch
 } from "@dogiloki/artha-js/dist/artha.min.js";
 ```
 
@@ -81,7 +85,7 @@ O bien desde HTML:
 
 ## Inicio rápido
 
-Ejemplo mínimo con un formulario y un contenedor que carga datos remotos:
+Ejemplo mínimo con formulario, contenedor remoto y búsqueda:
 
 ```html
 <!DOCTYPE html>
@@ -105,7 +109,9 @@ Ejemplo mínimo con un formulario y un contenedor que carga datos remotos:
     id="users"
     action="/api/users"
     method="GET"
-    template="user-template">
+    template="user-template"
+    searcher
+    pagination="10">
   </artha-container>
 
   <template id="user-template">
@@ -134,7 +140,8 @@ import {
   ArthaMessage,
   ArthaLoader,
   ArthaContainer,
-  ArthaForm
+  ArthaForm,
+  InputSearch
 } from "./dist/artha.min.js";
 ```
 
@@ -164,14 +171,14 @@ EventBus.on("artha:before-register", () => {
 
 Componente para mostrar mensajes visuales.
 
-### Tipos soportados
+#### Tipos soportados
 
 - `info`
 - `success`
 - `warning`
 - `error`
 
-### Ejemplo
+#### Ejemplo
 
 ```html
 <artha-message id="feedback"></artha-message>
@@ -187,7 +194,7 @@ message.error("Ocurrió un error");
 message.hidden();
 ```
 
-### API pública
+#### API pública
 
 - `show(message, type)`
 - `info(message)`
@@ -200,12 +207,12 @@ message.hidden();
 
 Loader visual para estados de carga.
 
-### Atributos
+#### Atributos
 
 - `type`: tipo de loader. Default: `ring`
 - `text`: texto mostrado debajo del loader. Default: `Petición en proceso...`
 
-### Tipos disponibles
+#### Tipos disponibles
 
 - `ring`
 - `dots`
@@ -214,7 +221,7 @@ Loader visual para estados de carga.
 
 Nota: en la implementación actual `bar` y `wave` reutilizan la misma clase visual que `dots`.
 
-### Ejemplo
+#### Ejemplo
 
 ```html
 <artha-loader type="ring" text="Cargando usuarios"></artha-loader>
@@ -225,7 +232,7 @@ Nota: en la implementación actual `bar` y `wave` reutilizan la misma clase visu
 
 Formulario asíncrono basado en `XMLHttpRequest`.
 
-### Comportamiento
+#### Comportamiento
 
 - intercepta el evento `submit`
 - valida los campos con `checkValidity()`
@@ -233,7 +240,7 @@ Formulario asíncrono basado en `XMLHttpRequest`.
 - muestra mensajes con `artha-message`
 - rellena campos automáticamente si la respuesta trae `data`
 
-### Atributos útiles
+#### Atributos útiles
 
 - `action`: endpoint del formulario
 - `method`: método HTTP
@@ -242,23 +249,7 @@ Formulario asíncrono basado en `XMLHttpRequest`.
 - `message-target`: selector interno para localizar el mensaje asociado
 - `id`: usado para identificar la tarea en `TaskQueue`
 
-### Ejemplo
-
-```html
-<artha-form id="profile-form" action="/api/profile" method="POST">
-  <artha-message></artha-message>
-  <input type="text" name="name" required>
-  <input type="email" name="email" required>
-  <label>
-    <input type="checkbox" name="active">
-    Activo
-  </label>
-  <button type="submit">Guardar</button>
-  <button type="reset">Limpiar</button>
-</artha-form>
-```
-
-### API pública
+#### API pública
 
 - `submit()`
 - `reset(resetMessage = true)`
@@ -269,73 +260,60 @@ Formulario asíncrono basado en `XMLHttpRequest`.
 - `getValue(name)`
 - `input(name)`
 
-### Eventos emitidos
+#### Eventos emitidos
 
-- `load`: se dispara cuando XHR termina de cargar
-- `resolve`: se dispara cuando la respuesta fue aceptada y procesada
-- `component-ready`: heredado de `BaseComponent`
+- `load`
+- `resolve`
+- `component-ready`
 
 ### `artha-container`
 
 Componente para cargar, renderizar y refrescar datos remotos, o actualizar vistas existentes.
 
-### Casos de uso
+#### Casos de uso
 
 - listados
 - tarjetas
 - tablas simples
 - bloques con plantillas HTML
 - selección simple o múltiple
+- búsqueda con `input-search`
+- paginación simple
 - refresco desde eventos globales
 
-### Atributos útiles
+#### Atributos útiles
 
 - `action`: endpoint a consultar
 - `method`: método HTTP. Default: `GET`
+- `page`: página actual cuando hay paginación. Default: `1`
+- `search`: criterio de búsqueda interno
 - `template`: id de un `<template>` o referencia configurada en el componente
-- `pagination`: valor configurado pero no aplicado directamente en la clase actual. Default: `10`
+- `pagination`: cantidad por página enviada en la query. Default: `10`
 - `message`: referencia al mensaje asociado
 - `message-target`: selector interno alternativo para localizar un `artha-message`
-- `searcher`: activa el comportamiento de búsqueda si existe un `input-search`
+- `searcher`: crea internamente un `input-search` y lo conecta al contenedor
 - `selectable`: permite seleccionar items
 - `multiple`: permite múltiples selecciones
 - `refresh-on`: nombres de eventos del `EventBus`, separados por coma
 - `id`: identificador del contenedor
 
-### Ejemplo con plantilla
+#### API pública
 
-```html
-<artha-container
-  id="users"
-  action="/api/users"
-  method="GET"
-  template="user-card"
-  selectable
-  multiple
-  refresh-on="users:reload,users:updated">
-  <artha-message></artha-message>
-</artha-container>
-
-<template id="user-card">
-  <article class="user-card">
-    <h3 data-wire="name"></h3>
-    <p data-wire="email"></p>
-    <span data-wire="active:boolean"></span>
-  </article>
-</template>
-```
-
-### API pública
-
-- `refresh(search = null)`: vuelve a pedir los datos remotos
-- `refreshWithData(data)`: actualiza un item ya renderizado por `data.id`
+- `hasAction()`
+- `hasPagination()`
+- `refresh(search = null)`
+- `refreshWithData(data)`
 - `render(results, refresh = false, refreshChildren = true)`
 - `renderItem(data, refreshChildren = true, update = null)`
-- `reset()`: limpia la selección
-- `selection()`: devuelve el store de selección
-- propiedad `value`: ids seleccionados
+- `nextPage()`
+- `prevPage()`
+- `goToPage(page)`
+- `resetPagination(refresh = false)`
+- `reset()`
+- `selection()`
+- propiedad `value`
 
-### Selección
+#### Selección
 
 Si `selectable` está activo:
 
@@ -343,7 +321,44 @@ Si `selectable` está activo:
 - si también `multiple` está activo, devuelve un arreglo de ids
 - `reset()` limpia la selección actual
 
-### Eventos emitidos
+#### Búsqueda
+
+Si `searcher` está activo, `artha-container` crea un `<input-search>` interno y escucha:
+
+- `search`: ejecuta `refresh(query)` y reinicia `page` a `1`
+- `cancel-search`: aborta la petición XHR activa si existe
+
+#### Paginación
+
+Si el contenedor tiene el atributo `pagination`, enviará estos parámetros en la query:
+
+- `pagination`
+- `page`
+
+Ejemplo:
+
+```html
+<artha-container
+  id="users"
+  action="/api/users"
+  template="user-card"
+  pagination="10"
+  searcher>
+</artha-container>
+```
+
+Y desde JavaScript:
+
+```js
+const container = document.getElementById("users");
+
+container.nextPage();
+container.prevPage();
+container.goToPage(3);
+container.resetPagination(true);
+```
+
+#### Eventos emitidos
 
 - `load`
 - `resolve`
@@ -353,7 +368,7 @@ Si `selectable` está activo:
 - `item-deselected`
 - `component-ready`
 
-### Sistema `data-wire`
+#### Sistema `data-wire`
 
 El renderizado se basa en atributos `data-wire` dentro de la plantilla.
 
@@ -367,7 +382,7 @@ data-wire="ruta:boolean"
 data-wire="ruta:boolean:chooser"
 ```
 
-### Ejemplos de `data-wire`
+#### Ejemplos de `data-wire`
 
 Texto simple:
 
@@ -409,7 +424,7 @@ Booleano con selección por plantilla:
 </div>
 ```
 
-### Renderizado de arreglos
+#### Renderizado de arreglos
 
 El componente soporta rutas terminadas en `[]` para iterar datos. Internamente, busca elementos marcados con `fillable` o `iterable`.
 
@@ -425,13 +440,73 @@ Ejemplo conceptual:
 
 Nota: el flujo más sólido en la implementación actual es renderizar texto, booleanos y arreglos. Si quieres usar mapeos más avanzados, conviene probarlos primero en tu caso concreto.
 
+### `input-search`
+
+Componente de búsqueda con debounce pensado para integrarse con `artha-container`.
+
+#### Atributos
+
+- `delay`: milisegundos de espera antes de emitir la búsqueda. Default: `300`
+- `text`: placeholder del input. Default: `Buscar`
+
+#### API pública
+
+- `search()`
+
+#### Eventos emitidos
+
+- `search`: emite `{ query }`
+- `cancel-search`: emite `{ query }` cuando se cancela una búsqueda en cola
+
+#### Ejemplo
+
+```html
+<input-search delay="300" text="Buscar usuarios"></input-search>
+```
+
+```js
+const search = document.querySelector("input-search");
+
+search.addEventListener("search", (evt) => {
+  console.log(evt.detail.query);
+});
+```
+
 ## Core
+
+### `BaseComponent`
+
+Clase base para los custom elements de la librería. Gestiona atributos, propiedades, defaults, booleanos, referencias a elementos y eventos de cambio.
+
+#### Opciones de configuración
+
+- `booleans`: lista de props booleanas
+- `element_refs`: props que apuntan a elementos del DOM por atributo `id` o por referencia en memoria
+- `defaults`: valores por defecto
+- `resolvers`: getter/setter personalizado por prop
+- `reflect`: permite indicar props que no deben reflejarse como atributos HTML
+
+#### `reflect`
+
+Cuando una prop se define con `reflect: false`, `BaseComponent` la guarda en memoria y no usa `setAttribute()` ni `getAttribute()`.
+
+Ejemplo conceptual:
+
+```js
+super(["search", "page"], {
+  reflect: {
+    search: false
+  }
+});
+```
+
+Esto es útil para estado interno que no conviene escribir en el DOM.
 
 ### `XHR`
 
 Wrapper de `XMLHttpRequest` con callbacks y opciones centralizadas.
 
-### Uso básico
+#### Uso básico
 
 ```js
 import { XHR } from "./dist/artha.min.js";
@@ -451,7 +526,7 @@ XHR.request({
 });
 ```
 
-### Opciones disponibles
+#### Opciones disponibles
 
 - `method`: default `GET`
 - `url`: URL final
@@ -474,7 +549,7 @@ XHR.request({
 - `onAbort(transformed)`
 - `onAction(xhr)`
 
-### Notas de comportamiento
+#### Notas de comportamiento
 
 - si existe `<meta name="csrf-token">` o `<meta name="csrf_token">`, se envía como header `X-CSRF-Token`
 - para métodos distintos de `GET`, la librería envía `FormData`
@@ -485,7 +560,7 @@ XHR.request({
 
 Evita ejecutar dos tareas con el mismo id al mismo tiempo y centraliza el cierre de estados.
 
-### Uso básico
+#### Uso básico
 
 ```js
 import { TaskQueue } from "./dist/artha.min.js";
@@ -508,7 +583,7 @@ queue.loadTask("save-user", "Guardando usuario...", (task) => {
 });
 ```
 
-### Defaults
+#### Defaults
 
 ```js
 TaskQueue.defaults = {
@@ -518,7 +593,7 @@ TaskQueue.defaults = {
 };
 ```
 
-### Observaciones
+#### Observaciones
 
 - cada tarea necesita un id único
 - si se repite el id mientras sigue activa, se cancela la nueva tarea
@@ -529,7 +604,7 @@ TaskQueue.defaults = {
 
 Bus global basado en `EventTarget`.
 
-### Uso
+#### Uso
 
 ```js
 import { EventBus } from "./dist/artha.min.js";
@@ -543,7 +618,7 @@ EventBus.emitAsync("users:reload", { source: "async" });
 unsubscribe();
 ```
 
-### API pública
+#### API pública
 
 - `EventBus.emit(name, data)`
 - `EventBus.emitAsync(name, data)`
@@ -554,7 +629,7 @@ unsubscribe();
 - `EventBus.clean(name)`
 - `EventBus.clearAll()`
 
-### Debug
+#### Debug
 
 ```js
 EventBus.debug = true;
@@ -564,7 +639,7 @@ EventBus.debug = true;
 
 Utilidades generales.
 
-### API pública
+#### API pública
 
 - `Util.getMeta(name)`
 - `Util.getValueByPath(obj, path, defaultValue = null)`
@@ -575,7 +650,7 @@ Utilidades generales.
 - `Util.withinRange(value, min, max)`
 - `Util.createElement(type, value = null, options = {})`
 
-### Ejemplos
+#### Ejemplos
 
 ```js
 Util.getMeta("csrf-token");
@@ -623,6 +698,8 @@ Si tu API responde con otro formato, puedes adaptar la salida usando `XHR.defaul
 - `item-rendered`
 - `item-selected`
 - `item-deselected`
+- `search`
+- `cancel-search`
 
 ### Eventos globales de Artha
 
