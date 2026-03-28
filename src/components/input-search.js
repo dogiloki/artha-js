@@ -27,6 +27,9 @@ export default class InputSearch extends BaseComponent{
             defaults:{
                 delay:InputSearch.defaults.delay,
                 text:InputSearch.defaults.text
+            },
+            reflect:{
+                text:false
             }
         });
         this._search_timer=null;
