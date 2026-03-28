@@ -10,17 +10,22 @@ export default class ArthaContainer extends BaseComponent{
         method:'GET',
         pagination:10,
         page:1,
+        response_type:'json'
     };
 
     constructor(){
         super(
             ["template","action","action_router","method","page","search",
-            "pagination","message","searcher","selectable","multiple"],
+            "pagination","message","searcher","selectable","multiple","response_type"],
             {
                 booleans:['searcher','selectable','multiple'],
                 element_refs:['template','message'],
+                defaults:{
+                    response_type:ArthaContainer.defaults.response_type
+                },
                 reflect:{
-                    search:false
+                    search:false,
+                    response_type:false
                 }
             }
         );
@@ -33,7 +38,6 @@ export default class ArthaContainer extends BaseComponent{
         this._current_xhr=null;
         this.items={};
         this.selection_store=new SelectionStore();
-        this.response_type='json';
         this.message??=this.querySelector('artha-message')??this.querySelector(this.getAttribute('message-target'))??null;
         this.id=this.getAttribute('id')??'container-'+BaseComponent.counter;
         if(this.hasPagination()){
@@ -75,7 +79,8 @@ export default class ArthaContainer extends BaseComponent{
     _handleSearch(evt){
         this.page=1;
         if(this.action){
-            return this.refresh(evt.detail.query);
+            this.search=evt.detail.query;
+            return this.refresh();
         }else{
             const search=evt.detail.query?.toLowerCase()??'';
             for(const item of this.items){
@@ -130,7 +135,7 @@ export default class ArthaContainer extends BaseComponent{
     }
 
     getData(search=null){
-        this.search=search;
+        search??=this.search;
         if(!this.action) return;
         let query={};
         if(this.hasPagination()){
@@ -215,7 +220,7 @@ export default class ArthaContainer extends BaseComponent{
     }
 
     refresh(search=null){
-        this.search=search;
+        search??=this.search;
         this.loader_container.remove();
         if(this.template){
             this.content.innerHTML="";
