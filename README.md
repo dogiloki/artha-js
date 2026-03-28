@@ -165,6 +165,8 @@ EventBus.on("artha:before-register", () => {
 });
 ```
 
+Importante: si quieres cambiar `XHR.defaults.transformResponse`, hazlo antes de que los componentes se registren. La forma recomendada es usar el evento `artha:before-register`.
+
 ## Componentes
 
 ### `artha-message`
@@ -555,6 +557,57 @@ XHR.request({
 - para métodos distintos de `GET`, la librería envía `FormData`
 - también agrega `_method` dentro del `FormData`
 - si hay token CSRF, también agrega `csrf_token` al cuerpo
+
+#### Ejemplo con `transformResponse`
+
+Si tu API no responde con la forma esperada por `ArthaForm` o `ArthaContainer`, puedes normalizarla con `XHR.defaults.transformResponse`.
+
+Importante: configúralo antes de que se registren los componentes. La forma recomendada es hacerlo dentro de `artha:before-register`.
+
+```js
+import { EventBus, XHR } from "./dist/artha.min.js";
+
+EventBus.on("artha:before-register", () => {
+  XHR.defaults.transformResponse = (xhr) => {
+    const raw = xhr.response;
+
+    // El attributo status se puede omitir, ya que se asigna un valor por defecto en base al código http
+    // Si xhr.status esta en el rango de 200-299 se asigna success de lo contrario se asigna error
+    return {
+      status: xhr.status >= 200 && xhr.status < 300 ? "success" : "error",
+      message: raw?.message ?? null,
+      errors: raw?.errors ?? null,
+      data: raw?.result ?? raw?.data ?? raw
+    };
+  };
+});
+```
+
+Ejemplo de respuesta original:
+
+```json
+{
+  "result": [
+    { "id": 1, "name": "Ana" },
+    { "id": 2, "name": "Luis" }
+  ],
+  "message": "OK"
+}
+```
+
+Respuesta normalizada:
+
+```js
+{
+  status: "success",
+  message: "OK",
+  errors: null,
+  data: [
+    { id: 1, name: "Ana" },
+    { id: 2, name: "Luis" }
+  ]
+}
+```
 
 ### `TaskQueue`
 
