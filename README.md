@@ -289,6 +289,7 @@ Componente para cargar, renderizar y refrescar datos remotos, o actualizar vista
 - `method`: método HTTP. Default: `GET`
 - `page`: página actual cuando hay paginación. Default: `1`
 - `search`: criterio de búsqueda interno
+- `response-type`: tipo de respuesta del XHR usado por el contenedor. Default: `json`
 - `template`: id de un `<template>` o referencia configurada en el componente
 - `pagination`: cantidad por página enviada en la query. Default: `10`
 - `message`: referencia al mensaje asociado
@@ -327,7 +328,7 @@ Si `selectable` está activo:
 
 Si `searcher` está activo, `artha-container` crea un `<input-search>` interno y escucha:
 
-- `search`: ejecuta `refresh(query)` y reinicia `page` a `1`
+- `search`: actualiza `search`, ejecuta `refresh()` y reinicia `page` a `1`
 - `cancel-search`: aborta la petición XHR activa si existe
 
 #### Paginación
@@ -571,8 +572,8 @@ EventBus.on("artha:before-register", () => {
   XHR.defaults.transformResponse = (xhr) => {
     const raw = xhr.response;
 
-    // El attributo status se puede omitir, ya que se asigna un valor por defecto en base al código http
-    // Si xhr.status esta en el rango de 200-299 se asigna success de lo contrario se asigna error
+    // El atributo status se puede omitir si prefieres usar la validación por código HTTP.
+    // En este ejemplo se normaliza de forma explícita.
     return {
       status: xhr.status >= 200 && xhr.status < 300 ? "success" : "error",
       message: raw?.message ?? null,
