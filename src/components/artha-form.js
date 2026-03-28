@@ -2,20 +2,25 @@ import BaseComponent from '../abstract/BaseComponent.js';
 import Util from '../core/Util.js';
 import XHR from '../core/XHR.js';
 import TaskQueue from '../core/TaskQueue.js';
-import ArthaMessage from './artha-message.js';
 
 export default class ArthaForm extends BaseComponent{
     
+    static defaults={
+        response_type:'json'
+    };
+
     constructor(){
         super([
             'action','method','response_type','disable_submit'
         ],{
             booleans:['disable_submit'],
             defaults:{
-                'response_type':'json'
+                'response_type':ArthaForm.defaults.response_type
+            },
+            reflect:{
+                response_type:false
             }
         });
-        this.response_type='dsa';
         this.task_queue=TaskQueue.singleton();
         this.message=this.querySelector('artha-message')??this.querySelector(this.getAttribute('message-target'))??null;
         if(!this.message){
