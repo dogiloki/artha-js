@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0
+
+### Fixed
+- Se corrigió que la clase TaskQueue no usaba el XHR.defaults.transformResponse al resolver la petición hecha por 'artha-form'.
+- Se agregó en la clase TaskQueue generar status en la respuesta en caso de no exitir validada en base al código de respuesta del http.
+
 ## 1.4.0
 
 ### Fixed

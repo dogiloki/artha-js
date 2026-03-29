@@ -1,5 +1,6 @@
 import Util from "./Util.js";
 import ArthaMessage from "../components/artha-message.js";
+import XHR from "./XHR.js";
 
 export default class TaskQueue{
     
@@ -100,7 +101,13 @@ class TaskQueueItem{
             this.onFinalize();
             return;
         }
-        let response=data?.response??data;
+        let response;
+        try{
+            response=XHR.defaults.transformResponse(data);
+        }catch(err){
+            response=data;
+        }
+        response.status??=Util.withinRange(data.status,200,299)?"success":"error";
 
         // Blob para descargar
         if(response instanceof Blob){
