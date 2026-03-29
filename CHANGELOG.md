@@ -1,10 +1,15 @@
 # Changelog
 
+## 1.3.2
+
+### Fixed
+- Se corrigió error al cargar componente 'artha-loader' dentro de 'artha-container'
+
 ## 1.3.1
 
 ### Changed
-
 - Se separo el manejo de arrays simples y arrays de objectos en artha-container.
+
 ### Fixed
 - Se corrigió el render de contenedores anidados usando 'data-wire' con arrays de objetos.
 

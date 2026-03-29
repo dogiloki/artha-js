@@ -90,7 +90,11 @@ export default class ArthaContainer extends BaseComponent{
     }
 
     _createLoader(){
-        return Util.createElement('div');
+        try{
+            return Util.createElement('artha-loader');
+        }catch(ex){
+            return Util.createElement('div',TaskQueue.defaults.title);
+        }
     }
 
     _handleSearch(evt){
