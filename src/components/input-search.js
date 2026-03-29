@@ -33,7 +33,40 @@ export default class InputSearch extends BaseComponent{
             }
         });
         this._search_timer=null;
+        this._initialized=false;
+        this._onInput=(evt=>{
+            this._queueSearch();
+        });
+        this._onKeyDown=(evt=>{
+            if(evt.key==='Enter'){
+                evt.preventDefault();
+                this._cancelQueuedSearch();
+                this.search();
+            }
+        });
+        this._onClick=(evt=>{
+            evt.preventDefault();
+            this._cancelQueuedSearch();
+            this.search();
+        });
+    }
+
+    onConnected(){
+        if(this._initialized) return;
         this._ensureStructure();
+        this._bindEvents();
+        this._initialized=true;
+    }
+
+    onDisconnected(){
+        this.input?.removeEventListener('input',this._onInput);
+        this.input?.removeEventListener('keydown',this._onKeyDown);
+        this.button?.removeEventListener('click',this._onClick);
+        if(this._search_timer){
+            clearTimeout(this._search_timer);
+            this._search_timer=null;
+        }
+        this._initialized=false;
     }
 
     _ensureStructure(){
@@ -44,31 +77,18 @@ export default class InputSearch extends BaseComponent{
             input.type="search";
             input.placeholder=this.text;
         }));
-        this.button=this.appendChild(Util.createElement('button',async(button)=>{
+        this.button=this.appendChild(Util.createElement('button',(button)=>{
             button.classList.add('button-search');
             button.appendChild(Util.createElement('span',(span)=>{
                 span.classList.add('icon','search');
             }));
         }));
-        this._bindEvents();
     }
 
     _bindEvents(){
-        this.input.addEventListener('input',(evt)=>{
-            this._queueSearch();
-        });
-        this.input.addEventListener('keydown',(evt)=>{
-            if(evt.key==='Enter'){
-                evt.preventDefault();
-                this._cancelQueuedSearch();
-                this.search();
-            }
-        });
-        this.button.addEventListener('click',(evt)=>{
-            evt.preventDefault();
-            this._cancelQueuedSearch();
-            this.search();
-        });
+        this.input.addEventListener('input',this._onInput);
+        this.input.addEventListener('keydown',this._onKeyDown);
+        this.button.addEventListener('click',this._onClick);
     }
 
     _queueSearch(){

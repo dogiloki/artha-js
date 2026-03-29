@@ -27,9 +27,15 @@ export default class BaseComponent extends HTMLElement{
             reflect:{} // Guardar en memoria y no llamar a setAttribute y getAttribute
         };
         this.configureProperties(props,options);
+        this._initialize_properties=false;
     }
 
     connectedCallback(){
+        if(!this._initialize_properties){
+            // Iniciar con valores de atributos existentes
+            this._initializeProperties();
+            this._initialize_properties=true;
+        }
         this.onConnected();
         this.dispatchEvent(new CustomEvent('component-ready',{
             detail:this,
@@ -104,8 +110,6 @@ export default class BaseComponent extends HTMLElement{
                 configurable:true
             });
         });
-        // Iniciar con valores de atributos existentes
-        this._initializeProperties();
     }
 
     _getPropertyValue(prop){

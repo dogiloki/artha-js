@@ -19,14 +19,23 @@ export default class ArthaMessage extends BaseComponent{
         WARNING:{
             code:2,
             name:"warning"
-        },
-        
+        }
     });
 
     constructor(){
         super();
+        this._initialized=false;
+    }
+
+    onConnected(){
+        if(this._initialized) return;
         this.type=this.getAttribute("type")||ArthaMessage.TYPE.INFO.name;
         this.hidden();
+        this._initialized=true;
+    }
+
+    onDisconnected(){
+        this._initialized=false;
     }
 
     error(message=null){

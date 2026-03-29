@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0
+
+### Fixed
+- Códgio el error 'Operation is not supported' que aparecia en la consola del navegador al crear de forma automática el 'artha-loader' en un 'artha-container' anidado dentro de una template.
+- En todos los componentes se modificó para separar la carga del constructor, connectedCallback y disconnectedCallback. Solucionando mensajes de error al anidar componentes entre si.
+- Error al actualizar estilos un item de un 'artha-container' al hacer un setter de value desde js.
+
 ## 1.3.2
 
 ### Fixed

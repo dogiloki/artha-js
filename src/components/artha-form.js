@@ -22,31 +22,46 @@ export default class ArthaForm extends BaseComponent{
             }
         });
         this.task_queue=TaskQueue.singleton();
+        this.message=null;
+        this.element_inputs=[];
+        this.ignored_input=[];
+        this._initialized=false;
+
+        this._onSubmit=(evt)=>{
+            evt.preventDefault();
+            if(!this.disable_submit) this.submit();
+        };
+        this._onKeyDown=(evt)=>{
+            if(this.disable_submit && evt.key==='Enter' && evt.target instanceof HTMLInputElement){
+                evt.preventDefault();
+            }
+        };
+    }
+
+    onConnected(){
+        if(this._initialized) return;
+
         this.message=this.querySelector('artha-message')??this.querySelector(this.getAttribute('message-target'))??null;
         if(!this.message){
             this.message=Util.createElement('artha-message');
             this.appendChild(this.message);
         }
-        this.element_inputs=[];
-        this.ignored_input=[];
 
         // Cargar inputs iniciales
         this.loadInputs();
 
         // Interceptar submit
-        this.addEventListener('submit',(evt)=>{
-            evt.preventDefault();
-            if(!this.disable_submit) this.submit();
-        });
-
+        this.addEventListener('submit',this._onSubmit);
         // Tecla enter
-        this.addEventListener('keydown',(evt)=>{
-            if(this.disable_submit && evt.key==='Enter' && evt.target instanceof HTMLInputElement){
-                evt.preventDefault();
-            }
-        });
+        this.addEventListener('keydown',this._onKeyDown);
 
         this._bindEvents();
+        this._initialized=true;
+    }
+
+    onDisconnected(){
+        this.removeEventListener('submit',this._onSubmit);
+        this.removeEventListener('keydown',this._onKeyDown);
     }
 
     _bindEvents(){

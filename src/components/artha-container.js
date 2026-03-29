@@ -38,9 +38,14 @@ export default class ArthaContainer extends BaseComponent{
         this._current_xhr=null;
         this.items={};
         this.selection_store=new SelectionStore();
+        this._initialized=false;
+        this._onSearch=(evt)=>this._handleSearch(evt);
+        this._onCancelSearch=(evt)=>this._cancelSearch(evt);
     }
 
     onConnected(){
+        if(this._initialized) return;
+
         this.message??=this.querySelector('artha-message')??this.querySelector(this.getAttribute('message-target'))??null;
         this.id=this.getAttribute('id')??'container-'+BaseComponent.counter;
         if(this.hasPagination()){
@@ -58,8 +63,8 @@ export default class ArthaContainer extends BaseComponent{
         if(this.searcher){
             this.searcher_input=Util.createElement('input-search');
             this.appendChild(this.searcher_input);
-            this.searcher_input.addEventListener('search',(evt)=>this._handleSearch(evt));
-            this.searcher_input.addEventListener('cancel-search',(evt)=>this._cancelSearch(evt));
+            this.searcher_input.addEventListener('search',this._onSearch);
+            this.searcher_input.addEventListener('cancel-search',this._onCancelSearch);
         }
 
         // Contenido
@@ -81,20 +86,22 @@ export default class ArthaContainer extends BaseComponent{
             EventBus.on(channel,listener);
             this._refresh_listeners.push({channel,listener});
         }
+
+        this._initialized=true;
     }
 
     onDisconnected(){
         for(const {channel,listener} of this._refresh_listeners??[]){
             EventBus.off(channel,listener);
         }
+        this.searcher_input?.removeEventListener('search',this._onSearch);
+        this.searcher_input?.removeEventListener('cancel-search',this._onCancelSearch);
+        this._current_xhr?.abort();
+        this._current_xhr=null;
     }
 
     _createLoader(){
-        try{
-            return Util.createElement('artha-loader');
-        }catch(ex){
-            return Util.createElement('div',TaskQueue.defaults.title);
-        }
+        return Util.createElement('artha-loader');
     }
 
     _handleSearch(evt){
@@ -131,7 +138,7 @@ export default class ArthaContainer extends BaseComponent{
             const id=item.dataset.id;
             if(values.includes(id)){
                 this.selection_store.add(id,item,item.data);
-                this.classList.add('selected');
+                item.classList.add('selected');
                 if(!this.multiple && ++count>=1) break;
             }else{
                 item.classList.remove('selected');
@@ -392,7 +399,7 @@ export default class ArthaContainer extends BaseComponent{
     _findWires(root){
         const result=[];
         for(const child of root.children){
-            if(child instanceof ArthaContainer && child.hasAttribute('data-ignore-wire')) continue;
+            if(child.matches('artha-container') && child.hasAttribute('data-ignore-wire')) continue;
             if(child.hasAttribute('data-wire')) result.push(child);
             result.push(...this._findWires(child));
         }

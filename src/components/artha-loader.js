@@ -48,21 +48,37 @@ export default class ArthaLoader extends BaseComponent{
                 }
             }
         );
-        this.addEventListener('property-changed',()=>{
+        this._initialized=false;
+        this._property_changed=()=>{
             this.render();
-        });
-        this.render();
+        };
+    }
+
+    onConnected(){
+        if(this._initialized) return;
+        this.addEventListener('property-changed',this._property_changed);
+        try{
+            this.render();
+            this._initialized=true;
+        }catch(err){
+            this.removeEventListener('property-changed',this._property_changed);
+            throw err;
+        }
+    }
+
+    onDisconnected(){
+        this.removeEventListener('property-changed',this._property_changed);
+        this._initialized=false;
     }
 
     getLoaderInstance(){
-        return new (this.type)(this.getAttribute("type"),this.text);
+        const loader_class=this.type;
+        return new loader_class(this.getAttribute("type"),this.text);
     }
 
     render(){
-        this.innerHTML="";
         const content=this.getLoaderInstance().render();
-        this.appendChild(content[0]);
-        this.appendChild(content[1]);
+        this.replaceChildren(...content);
     }
 
 }
