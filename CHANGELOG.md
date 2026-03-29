@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.1
+
+### Changed
+
+- Se separo el manejo de arrays simples y arrays de objectos en artha-container.
+### Fixed
+- Se corrigió el render de contenedores anidados usando 'data-wire' con arrays de objetos.
+
+
 ## 1.3.0
 - Se agregó `input-search` que se agrega en automático al usar el componente artha-container.
 - Se implemento cancelación de búsquedas al continuar escribiendo o al pulsa el botón buscar en un artha-container con busqueda activada.

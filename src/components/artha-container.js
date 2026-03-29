@@ -38,6 +38,9 @@ export default class ArthaContainer extends BaseComponent{
         this._current_xhr=null;
         this.items={};
         this.selection_store=new SelectionStore();
+    }
+
+    onConnected(){
         this.message??=this.querySelector('artha-message')??this.querySelector(this.getAttribute('message-target'))??null;
         this.id=this.getAttribute('id')??'container-'+BaseComponent.counter;
         if(this.hasPagination()){
@@ -70,10 +73,24 @@ export default class ArthaContainer extends BaseComponent{
                 this.refresh();
             }
         }
+
+        const channels=(this.getAttribute('refresh-on')||'').split(',').map(c=>c.trim()).filter(c=>c.length>0);
+        this._refresh_listeners=[];
+        for(const channel of channels){
+            const listener=(evt)=>evt?.detail?this.refreshWithData(evt.detail):this.refresh();
+            EventBus.on(channel,listener);
+            this._refresh_listeners.push({channel,listener});
+        }
+    }
+
+    onDisconnected(){
+        for(const {channel,listener} of this._refresh_listeners??[]){
+            EventBus.off(channel,listener);
+        }
     }
 
     _createLoader(){
-        return Util.createElement('artha-loader');
+        return Util.createElement('div');
     }
 
     _handleSearch(evt){
@@ -115,22 +132,6 @@ export default class ArthaContainer extends BaseComponent{
             }else{
                 item.classList.remove('selected');
             }
-        }
-    }
-
-    connectedCallback(){
-        const channels=(this.getAttribute('refresh-on')||'').split(',').map(c=>c.trim()).filter(c=>c.length>0);
-        this._refresh_listeners=[];
-        for(const channel of channels){
-            const listener=(evt)=>evt?.detail?this.refreshWithData(evt.detail):this.refresh();
-            EventBus.on(channel,listener);
-            this._refresh_listeners.push({channel,listener});
-        }
-    }
-
-    disconnectedCallback(){
-        for(const {channel,listener} of this._refresh_listeners??[]){
-            EventBus.off(channel,listener);
         }
     }
 
@@ -231,12 +232,14 @@ export default class ArthaContainer extends BaseComponent{
     }
 
     refreshWithData(data){
+        if(!data) return;
         for(const child of this.content.querySelectorAll('[data-id]')){
             if(child.dataset.id==data.id) this.renderItem(data,true,child);
         }
     }
 
     render(results,refresh=false,refresh_children=true){
+        if(!results) return;
         if(refresh) this.refresh();
         results=Array.isArray(results)?results:[results];
         this.data=results;
@@ -247,6 +250,7 @@ export default class ArthaContainer extends BaseComponent{
     }
 
     renderItem(data,refresh_children=true,update=null){
+        if(!data) return;
         const template=this.template?(this.template.tagName==='TEMPLATE'?this.template.content.cloneNode(true):this.template.cloneNode(true)):this;
         const element=update?update:(this.template?template.children[0]:this);
 
@@ -260,11 +264,24 @@ export default class ArthaContainer extends BaseComponent{
                 let value=attrib_json?Util.getValueByPath(data,attrib_json.replaceAll("[]","")):data[index]??"";
                 const append=attrib_action==="append";
                 const chooser=attrib_action==="chooser";
-                const is_value_array=attrib_json?.endsWith("[]");
+                const is_array=Array.isArray(value);
+                const is_plain_array=is_array && value.every(v=>typeof v!=='object' || v===null);
 
-                if(item instanceof ArthaContainer) item.render(value,refresh_children);
-                else if(is_value_array) this._fillArray(item,append,chooser);
-                else this._setValue(item,attrib_element,value,append,chooser);
+                if(item.matches("artha-container")){
+                    if(typeof item.render==='function'){
+                        item.render(value,false,refresh_children);
+                    }else{
+                        item.addEventListener('component-ready',()=>{
+                            item.render(value,false,refresh_children);
+                        },{
+                            once:true
+                        });
+                    }
+                }else if(is_plain_array){
+                    this._fillArray(item,data,value);
+                }else{
+                    this._setValue(item,attrib_element,value,append,chooser);
+                }
             }
         }
 
@@ -344,7 +361,7 @@ export default class ArthaContainer extends BaseComponent{
                     }
                     break;
                 }
-                default: this.setAttribute(attrib_element,value);
+                default: item.setAttribute(attrib_element,value);
             }
         }else{
             if(append) value=item.textContent+value;
