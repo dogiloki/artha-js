@@ -5,7 +5,7 @@
     <title>Prueba ArthaJS</title>
     <link rel="stylesheet" href="dist/artha.min.css">
     <script type="module">
-        import {XHR,EventBus} from './dist/artha.min.js';
+        import {XHR,EventBus,ArthaLoader} from './dist/artha.min.js';
 
         EventBus.on('artha:before-register',()=>{
             XHR.defaults.transformResponse=(xhr)=>{
@@ -15,6 +15,8 @@
                     meta:null
                 };
             };
+            ArthaLoader.defaults.type=ArthaLoader.TYPE.IMG.name;
+            ArthaLoader.defaults.src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/LEGO_logo.svg/960px-LEGO_logo.svg.png";
         });
         const container=document.querySelector('artha-container');
         document.getElementById('refresh').addEventListener('click',(evt)=>{

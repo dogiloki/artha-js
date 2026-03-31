@@ -2,9 +2,10 @@ import Util  from "../../core/Util.js";
 
 export default class LoaderBase{
 
-    constructor(type,text){
+    constructor(type,text,src=null){
         this.type=type;
         this.text=text;
+        this.src=src;
     }
 
     renderType(){

@@ -2,10 +2,15 @@ import BaseComponent from '../abstract/BaseComponent.js';
 import TaskQueue from '../core/TaskQueue.js';
 import LoaderDots from '../components/loaders/LoaderDots.js';
 import LoaderRing from '../components/loaders/LoaderRing.js';
+import LoaderImg from '../components/loaders/LoaderImg.js';
 
 export default class ArthaLoader extends BaseComponent{
 
     static TYPE=Object.freeze({
+        IMG:{
+            name:'img',
+            clazz:LoaderImg
+        },
         DOTS:{
             name:'dots',
             clazz:LoaderDots
@@ -13,24 +18,23 @@ export default class ArthaLoader extends BaseComponent{
         RING:{
             name:'ring',
             clazz:LoaderRing
-        },
-        BAR:{
-            name:'bar',
-            clazz:LoaderDots
-        },
-        WAVE:{
-            name:'wave',
-            clazz:LoaderDots
         }
     });
 
+    static defaults={
+        type:ArthaLoader.TYPE.RING.name,
+        title:TaskQueue.defaults.title,
+        src:''
+    }
+
     constructor(){
         super(
-            ['type','text'],
+            ['type','title','src'],
             {
                 defaults:{
-                    type:ArthaLoader.TYPE.RING.name,
-                    text:TaskQueue.defaults.title
+                    type:ArthaLoader.defaults.type,
+                    title:ArthaLoader.defaults.title,
+                    src:ArthaLoader.defaults.src
                 },
                 resolvers:{
                     type:{
@@ -45,6 +49,9 @@ export default class ArthaLoader extends BaseComponent{
                             })?.name||value;
                         }
                     }
+                },
+                reflect:{
+                    src:false
                 }
             }
         );
@@ -73,7 +80,7 @@ export default class ArthaLoader extends BaseComponent{
 
     getLoaderInstance(){
         const loader_class=this.type;
-        return new loader_class(this.getAttribute("type"),this.text);
+        return new loader_class(this.getAttribute("type"),this.title,this.src);
     }
 
     render(){

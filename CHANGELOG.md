@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.0
+
+### Changed
+- Se implemento tipo de carga 'img' que a la cual se le puede incluir el src por medio de la configuración por default de 'ArthaLoader'.
+- Se removio el tipo de carga 'bar' y 'wave'. No había funcionalidad o animación diferente.
+
 ## 2.0.0
 
 ### Fixed
