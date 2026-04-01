@@ -59,12 +59,11 @@ export default class XHR{
                 return xhr.response;
             }
         };
-        url??="/"+uri;
         const xhr=new XMLHttpRequest();
         const query_string=Object.keys(query).length?"?"+Object.entries(query)
         .filter(([_,v])=>v!=null)
         .map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&"):"";
-        xhr.open(method,url+query_string,true);
+        xhr.open(method,url+"/"+uri+query_string,true);
         xhr.responseType=response_type;
         xhr.withCredentials=with_credentials;
         xhr.timeout=timeout;

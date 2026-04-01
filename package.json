@@ -1,24 +1,36 @@
 {
   "name": "@dogiloki/artha-js",
-  "version": "2.0.0",
-  "description": "",
-  "main": "dist/artha.min.js",
+  "version": "3.0.0",
+  "description": "Mini libreria de Web Components, XHR y UI para interfaces reactivas",
   "type": "module",
+  "main": "./dist/artha.min.js",
+  "module": "./dist/artha.min.js",
+  "style": "./dist/artha.min.css",
+  "exports": {
+    ".": "./dist/artha.min.js",
+    "./style": "./dist/artha.min.css",
+    "./artha.min.js": "./dist/artha.min.js",
+    "./artha.min.css": "./dist/artha.min.css"
+  },
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "scripts": {
     "dev:css": "sass --watch src/scss/main.scss:dist/artha.min.css --style=compressed",
+    "dev:js": "esbuild src/index.js --bundle --format=esm --minify --outfile=dist/artha.min.js --watch",
     "dev:server": "live-server --watch=. --port=8080",
-    "dev": "concurrently \"npm run dev:css\" \"npm run dev:server\"",
-    "build": "sass src/scss/main.scss dist/artha.min.css --style=compressed"
+    "dev": "concurrently \"npm run dev:css\" \"npm run dev:js\" \"npm run dev:server\"",
+    "build:css": "sass src/scss/main.scss dist/artha.min.css --style=compressed",
+    "build:js": "esbuild src/index.js --bundle --format=esm --minify --outfile=dist/artha.min.js",
+    "build": "npm run build:css && npm run build:js"
   },
   "keywords": [
     "task-queue",
     "javascript",
     "notifications",
-    "ui"
+    "ui",
+    "web-components",
+    "laravel"
   ],
   "author": "dogiloki",
   "license": "MIT",
@@ -32,6 +44,7 @@
   "homepage": "https://github.com/dogiloki/artha-js#readme",
   "devDependencies": {
     "concurrently": "^9.2.1",
+    "esbuild": "^0.25.0",
     "live-server": "^1.2.2",
     "sass": "^1.98.0"
   }

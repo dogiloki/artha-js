@@ -5,7 +5,7 @@
     <title>Prueba ArthaJS</title>
     <link rel="stylesheet" href="dist/artha.min.css">
     <script type="module">
-        import {XHR,EventBus} from './dist/artha.min.js';
+        import {XHR,EventBus} from './dist/index.js';
 
         EventBus.on('artha:before-register',()=>{
             XHR.defaults.transformResponse=(xhr)=>{
