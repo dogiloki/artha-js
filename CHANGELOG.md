@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.3
+
+### Fidex
+- Error al empaquetar cambios de v3.0.2
+
 ## 3.0.2
 
 ### Changed
