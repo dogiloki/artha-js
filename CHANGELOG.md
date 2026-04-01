@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.0.1
+
+### Fidex
+- Públicar archivos .md
+
+## 3.0.0
+
+### Fidex
+- Se remmovio el src de la paqueteria dejando unicamente el dist con todo empaquetado al instalar con npm
+
 ## 2.0.0
 
 ### Fixed
