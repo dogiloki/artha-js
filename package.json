@@ -1,6 +1,6 @@
 {
   "name": "@dogiloki/artha-js",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "Mini libreria de Web Components, XHR y UI para interfaces reactivas",
   "type": "module",
   "main": "./dist/artha.min.js",

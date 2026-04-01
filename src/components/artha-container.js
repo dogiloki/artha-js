@@ -269,7 +269,10 @@ export default class ArthaContainer extends BaseComponent{
         let index=0;
 
         for(const item of items){
-            const wires=item.getAttribute("data-wire").split(":");
+            const wires=item.getAttribute("data-wire")
+                            .split(",")
+                            map(w=>w.trim())
+                            .filter(w=>w.length>0);
             for(let wire of wires){
                 const [attrib_json,attrib_element,attrib_action]=wire.split(":");
                 let value=attrib_json?Util.getValueByPath(data,attrib_json.replaceAll("[]","")):data[index]??"";

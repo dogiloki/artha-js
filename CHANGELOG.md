@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.2
+
+### Changed
+- Aceptar varias referecias de 'data-wire' en un 'artha-container'. Ejemplo data-wire="email,name:title"
+
 ## 3.0.1
 
 ### Fidex
