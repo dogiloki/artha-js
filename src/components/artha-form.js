@@ -1,5 +1,5 @@
+import DOMHelper from '../helpers/DOMHelper.js';
 import BaseComponent from '../abstract/BaseComponent.js';
-import Util from '../core/Util.js';
 import XHR from '../core/XHR.js';
 import TaskQueue from '../core/TaskQueue.js';
 
@@ -43,7 +43,7 @@ export default class ArthaForm extends BaseComponent{
 
         this.message=this.querySelector('artha-message')??this.querySelector(this.getAttribute('message-target'))??null;
         if(!this.message){
-            this.message=Util.createElement('artha-message');
+            this.message=DOMHelper.createElement('artha-message');
             this.appendChild(this.message);
         }
 

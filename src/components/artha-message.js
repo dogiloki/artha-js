@@ -1,5 +1,5 @@
+import DOMHelper from '../helpers/DOMHelper.js';
 import BaseComponent from '../abstract/BaseComponent.js';
-import Util from "../core/Util.js";
 
 export default class ArthaMessage extends BaseComponent{
 
@@ -58,11 +58,11 @@ export default class ArthaMessage extends BaseComponent{
         if(!message || type==null) return this.hidden();
         if(type) this.setAttribute("type",(typeof type==="string"?type:type.name)||ArthaMessage.TYPE.INFO.name);
         if(message) this.innerHTML=message;
-        Util.modal(this,true);
+        DOMHelper.modal(this,true);
     }
 
     hidden(){
-        Util.modal(this,false);
+        DOMHelper.modal(this,false);
     }
 
 }

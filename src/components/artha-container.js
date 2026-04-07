@@ -1,5 +1,6 @@
+import DataHelper from '../helpers/DataHelper.js';
+import DOMHelper from '../helpers/DOMHelper.js';
 import BaseComponent from '../abstract/BaseComponent.js';
-import Util from '../core/Util.js';
 import EventBus from '../core/EventBus.js';
 import XHR from '../core/XHR.js';
 import TaskQueue from '../core/TaskQueue.js';
@@ -61,7 +62,7 @@ export default class ArthaContainer extends BaseComponent{
 
         // Input de búsqueda
         if(this.searcher){
-            this.searcher_input=Util.createElement('input-search');
+            this.searcher_input=DOMHelper.createElement('input-search');
             this.appendChild(this.searcher_input);
             this.searcher_input.addEventListener('search',this._onSearch);
             this.searcher_input.addEventListener('cancel-search',this._onCancelSearch);
@@ -101,7 +102,7 @@ export default class ArthaContainer extends BaseComponent{
     }
 
     _createLoader(){
-        return Util.createElement('artha-loader');
+        return DOMHelper.createElement('artha-loader');
     }
 
     _handleSearch(evt){
@@ -112,7 +113,7 @@ export default class ArthaContainer extends BaseComponent{
         }else{
             const search=evt.detail.query?.toLowerCase()??'';
             for(const item of this.items){
-                Util.modal(item,item.textContent.toLowerCase().includes(search));
+                DOMHelper.modal(item,item.textContent.toLowerCase().includes(search));
             }
         }
     }
@@ -271,11 +272,11 @@ export default class ArthaContainer extends BaseComponent{
         for(const item of items){
             const wires=item.getAttribute("data-wire")
                             .split(",")
-                            map(w=>w.trim())
+                            .map(w=>w.trim())
                             .filter(w=>w.length>0);
             for(let wire of wires){
                 const [attrib_json,attrib_element,attrib_action]=wire.split(":");
-                let value=attrib_json?Util.getValueByPath(data,attrib_json.replaceAll("[]","")):data[index]??"";
+                let value=attrib_json?DataHelper.getValueByPath(data,attrib_json.replaceAll("[]","")):data[index]??"";
                 const append=attrib_action==="append";
                 const chooser=attrib_action==="chooser";
                 const is_array=Array.isArray(value);
@@ -362,7 +363,7 @@ export default class ArthaContainer extends BaseComponent{
                         }
                     }else{
                         item.innerHTML="";
-                        item.appendChild(Util.createElement('span',(span)=>{
+                        item.appendChild(DOMHelper.createElement('span',(span)=>{
                             span.classList.add('check-cross');
                             if(value){
                                 span.classList.add('check-cross-yes');

@@ -1,4 +1,5 @@
-import Util from './Util.js';
+import DOMHelper from "../helpers/DOMHelper.js";
+import NumberHelper from "../helpers/NumberHelper.js";
 
 export default class XHR{
 
@@ -63,13 +64,13 @@ export default class XHR{
         const query_string=Object.keys(query).length?"?"+Object.entries(query)
         .filter(([_,v])=>v!=null)
         .map(([k,v])=>`${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&"):"";
-        xhr.open(method,url+"/"+uri+query_string,true);
+        xhr.open(method,url+uri+query_string,true);
         xhr.responseType=response_type;
         xhr.withCredentials=with_credentials;
         xhr.timeout=timeout;
 
         // Encabezados
-        const token=Util.getMeta("csrf-token")??Util.getMeta("csrf_token");
+        const token=DOMHelper.getMeta("csrf-token")??DOMHelper.getMeta("csrf_token");
         if(token){
             xhr.setRequestHeader("X-CSRF-Token",token);
         }
@@ -102,7 +103,7 @@ export default class XHR{
         // Carga con datos según la respuesta
         xhr.addEventListener("load",()=>{
             onLoad(xhr);
-            if(Util.withinRange(xhr.status,200,299)){
+            if(NumberHelper.withinRange(xhr.status,200,299)){
                 onData(xhr,safeTransform(xhr));
             }else{
                 onError(safeTransform(xhr));

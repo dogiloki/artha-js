@@ -1,4 +1,4 @@
-import Util from "./Util.js";
+import NumberHelper from "../helpers/NumberHelper.js";
 import ArthaMessage from "../components/artha-message.js";
 import XHR from "./XHR.js";
 
@@ -107,7 +107,7 @@ class TaskQueueItem{
         }catch(err){
             response=data;
         }
-        response.status??=Util.withinRange(data.status,200,299)?"success":"error";
+        response.status??=NumberHelper.withinRange(data.status,200,299)?"success":"error";
 
         // Blob para descargar
         if(response instanceof Blob){
@@ -139,7 +139,7 @@ class TaskQueueItem{
         }
         message=message||json.message||"Operación completada";
         // Validar respuesta http
-        if(Util.withinRange(data.status,200,299)){
+        if(NumberHelper.withinRange(data.status,200,299)){
             if(message){
                 this.message_element?.show(message,json?.status??null);
             }else{

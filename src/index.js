@@ -1,7 +1,17 @@
-import Util from './core/Util.js';
+// Helpers
+import DataHelper from './helpers/DataHelper.js';
+import DOMHelper from './helpers/DOMHelper.js';
+import FormatHelper from './helpers/FormatHelper.js';
+import FormHelper from './helpers/FormHelper.js';
+import NumberHelper from './helpers/NumberHelper.js';
+import StringHelper from './helpers/StringHelper.js';
+
+// Components
 import EventBus from './core/EventBus.js';
 import TaskQueue from './core/TaskQueue.js';
 import XHR from './core/XHR.js';
+
+// Core
 import ArthaMessage from './components/artha-message.js';
 import ArthaLoader from './components/artha-loader.js';
 import ArthaContainer from './components/artha-container.js';
@@ -9,7 +19,12 @@ import ArthaForm from './components/artha-form.js';
 import InputSearch from './components/input-search.js';
 
 export {
-    Util,
+    DataHelper,
+    DOMHelper,
+    FormatHelper,
+    FormHelper,
+    NumberHelper,
+    StringHelper,
     EventBus,
     TaskQueue,
     XHR,

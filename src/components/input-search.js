@@ -1,5 +1,5 @@
 import BaseComponent from '../abstract/BaseComponent.js';
-import Util from "../core/Util.js";
+import DOMHelper from "../helpers/DOMHelper.js";
 
 export default class InputSearch extends BaseComponent{
 
@@ -72,14 +72,14 @@ export default class InputSearch extends BaseComponent{
     _ensureStructure(){
         this.icon=InputSearch.defaults.icon;
         this.style.display="flex";
-        this.input=this.appendChild(Util.createElement('input',(input)=>{
+        this.input=this.appendChild(DOMHelper.createElement('input',(input)=>{
             input.classList.add('input-field');
             input.type="search";
             input.placeholder=this.text;
         }));
-        this.button=this.appendChild(Util.createElement('button',(button)=>{
+        this.button=this.appendChild(DOMHelper.createElement('button',(button)=>{
             button.classList.add('button-search');
-            button.appendChild(Util.createElement('span',(span)=>{
+            button.appendChild(DOMHelper.createElement('span',(span)=>{
                 span.classList.add('icon','search');
             }));
         }));

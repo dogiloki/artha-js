@@ -1,4 +1,4 @@
-import Util  from "../../core/Util.js";
+import DOMHelper  from "../../helpers/DOMHelper.js";
 
 export default class LoaderBase{
 
@@ -8,7 +8,7 @@ export default class LoaderBase{
     }
 
     renderType(){
-        return Util.createElement('div',(div)=>{
+        return DOMHelper.createElement('div',(div)=>{
             div.classList.add('loader-content');
         });
     }
@@ -18,7 +18,7 @@ export default class LoaderBase{
     }
 
     renderText(){
-        return Util.createElement('span',this.text);
+        return DOMHelper.createElement('span',this.text);
     }
 
     render(){

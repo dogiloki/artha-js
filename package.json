@@ -1,6 +1,6 @@
 {
   "name": "@dogiloki/artha-js",
-  "version": "3.0.3",
+  "version": "4.0.0",
   "description": "Mini libreria de Web Components, XHR y UI para interfaces reactivas",
   "type": "module",
   "main": "./dist/artha.min.js",
@@ -18,13 +18,18 @@
     "dist"
   ],
   "scripts": {
-    "dev:css": "sass --watch src/scss/main.scss:dist/artha.min.css --style=compressed",
-    "dev:js": "esbuild src/index.js --bundle --format=esm --minify --outfile=dist/artha.min.js --watch",
+    "dev:css": "sass --watch src/scss/main.scss:dist/artha.css --style=expanded --source-map",
+    "dev:js": "esbuild src/index.js --bundle --format=esm --outfile=dist/artha.js --sourcemap --watch",
     "dev:server": "live-server --watch=. --port=8080",
     "dev": "concurrently \"npm run dev:css\" \"npm run dev:js\" \"npm run dev:server\"",
+
     "build:css": "sass src/scss/main.scss dist/artha.min.css --style=compressed",
     "build:js": "esbuild src/index.js --bundle --format=esm --minify --outfile=dist/artha.min.js",
-    "build": "npm run build:css && npm run build:js"
+    "build": "npm run build:css && npm run build:js",
+
+    "build:debug:css": "sass src/scss/main.scss dist/artha.css --style=expanded --source-map",
+    "build:debug:js": "esbuild src/index.js --bundle --format=esm --outfile=dist/artha.js --sourcemap",
+    "build:debug": "npm run build:debug:css && npm run build:debug:js"
   },
   "keywords": [
     "task-queue",
