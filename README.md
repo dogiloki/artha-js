@@ -1,51 +1,63 @@
 # Artha JS
 
-Mini librería para construir interfaces HTML reactivas con Web Components, peticiones XHR, cola de tareas y mensajes visuales sin depender de frameworks.
+Mini libreria para construir interfaces HTML reactivas con Web Components, peticiones XHR, cola de tareas y mensajes visuales sin depender de frameworks.
 
-`Artha JS` expone un conjunto pequeño de utilidades y componentes personalizados pensados para:
+Artha JS esta pensada para:
 
-- enviar formularios por XMLHttpRequest
-- renderizar listas o bloques desde respuestas JSON
+- enviar formularios por XHR
+- renderizar listas y bloques desde respuestas JSON
 - mostrar loaders y mensajes de estado
 - buscar con debounce sobre contenedores remotos
 - coordinar eventos globales entre componentes
+- integrarse facil con Laravel y Vite
 
 ## Contenido
 
-- [¿Qué incluye?](#que-incluye)
-- [Instalación](#instalación)
-- [Inicio rápido](#inicio-rápido)
+- [Que incluye](#que-incluye)
+- [Instalacion](#instalacion)
+- [Uso con Laravel](#uso-con-laravel)
+- [Inicio rapido](#inicio-rapido)
 - [Exportaciones](#exportaciones)
 - [Componentes](#componentes)
 - [Core](#core)
 - [Flujo de respuesta esperado](#flujo-de-respuesta-esperado)
-- [Eventos útiles](#eventos-útiles)
+- [Eventos utiles](#eventos-utiles)
 - [Desarrollo](#desarrollo)
 - [Licencia](#licencia)
 
-## ¿Qué incluye?
+## Que incluye
 
-La librería exporta estas piezas:
+La libreria exporta:
 
-- `Util`: helpers de DOM, formato y utilidades generales
-- `EventBus`: bus global de eventos
-- `TaskQueue`: cola simple para evitar tareas duplicadas y coordinar estados
-- `XHR`: wrapper ligero sobre `XMLHttpRequest`
-- `ArthaMessage`: componente para mostrar mensajes de estado
-- `ArthaLoader`: componente visual de carga
-- `ArthaContainer`: componente para cargar y renderizar datos
-- `ArthaForm`: formulario con envío asíncrono
-- `InputSearch`: componente de búsqueda con debounce
+- `DataHelper`
+- `DOMHelper`
+- `FormatHelper`
+- `FormHelper`
+- `NumberHelper`
+- `StringHelper`
+- `EventBus`
+- `TaskQueue`
+- `XHR`
+- `SPA`
+- `ArthaMessage`
+- `ArthaLoader`
+- `ArthaContainer`
+- `ArthaForm`
+- `ArthaField`
+- `ArthaSelect`
+- `InputSearch`
 
-Al importar `dist/artha.min.js`, la librería registra automáticamente estos custom elements:
+Al importar el paquete principal se registran automaticamente estos custom elements:
 
 - `artha-container`
 - `artha-form`
 - `artha-message`
 - `artha-loader`
 - `input-search`
+- `artha-field`
+- `artha-select`
 
-## Instalación
+## Instalacion
 
 ### Desde npm
 
@@ -53,39 +65,65 @@ Al importar `dist/artha.min.js`, la librería registra automáticamente estos cu
 npm install @dogiloki/artha-js
 ```
 
-### Importando el bundle
+### Importar el paquete
 
 ```js
-import {
-  XHR,
-  EventBus,
-  TaskQueue,
-  Util,
-  ArthaForm,
-  ArthaContainer,
-  ArthaMessage,
-  ArthaLoader,
-  InputSearch
-} from "@dogiloki/artha-js/dist/artha.min.js";
+import "@dogiloki/artha-js";
 ```
 
-### Importando estilos
+### Importar estilos
 
-Si tu bundler soporta CSS desde dependencias:
+Desde JavaScript:
 
 ```js
-import "@dogiloki/artha-js/dist/artha.min.css";
+import "@dogiloki/artha-js/style";
 ```
 
-O bien desde HTML:
+Desde tu archivo CSS o SCSS:
 
-```html
-<link rel="stylesheet" href="./node_modules/@dogiloki/artha-js/dist/artha.min.css">
+```scss
+@import "@dogiloki/artha-js/dist/artha.min.css";
 ```
 
-## Inicio rápido
+Tambien puedes importar modulos puntuales:
 
-Ejemplo mínimo con formulario, contenedor remoto y búsqueda:
+```js
+import { EventBus, XHR, ArthaSelect } from "@dogiloki/artha-js";
+```
+
+## Uso con Laravel
+
+En `resources/js/app.js`:
+
+```js
+import "@dogiloki/artha-js";
+import "@dogiloki/artha-js/style";
+```
+
+Si quieres personalizar la forma en que se interpreta la respuesta del backend:
+
+```js
+import "@dogiloki/artha-js";
+import "@dogiloki/artha-js/style";
+import { EventBus, XHR } from "@dogiloki/artha-js";
+
+EventBus.on("artha:before-register", () => {
+  XHR.defaults.transformResponse = (xhr) => ({
+    status: xhr.status >= 200 && xhr.status < 300 ? "success" : "error",
+    message: xhr.response?.message ?? null,
+    errors: xhr.response?.errors ?? null,
+    data: xhr.response?.data ?? xhr.response
+  });
+});
+```
+
+Y en tu Blade:
+
+```php
+@vite(['resources/js/app.js'])
+```
+
+## Inicio rapido
 
 ```html
 <!DOCTYPE html>
@@ -108,7 +146,6 @@ Ejemplo mínimo con formulario, contenedor remoto y búsqueda:
   <artha-container
     id="users"
     action="/api/users"
-    method="GET"
     template="user-template"
     searcher
     pagination="10">
@@ -133,39 +170,30 @@ Ejemplo mínimo con formulario, contenedor remoto y búsqueda:
 
 ```js
 import {
-  Util,
+  DataHelper,
+  DOMHelper,
+  FormatHelper,
+  FormHelper,
+  NumberHelper,
+  StringHelper,
   EventBus,
   TaskQueue,
   XHR,
+  SPA,
   ArthaMessage,
   ArthaLoader,
   ArthaContainer,
   ArthaForm,
+  ArthaField,
+  ArthaSelect,
   InputSearch
-} from "./dist/artha.min.js";
+} from "@dogiloki/artha-js";
 ```
 
-Al cargar el módulo también se emiten dos eventos globales:
+Al cargar el modulo tambien se emiten:
 
 - `artha:before-register`
 - `artha:after-register`
-
-Esto sirve, por ejemplo, para personalizar la transformación de respuestas antes de registrar los componentes:
-
-```js
-import { EventBus, XHR } from "./dist/artha.min.js";
-
-EventBus.on("artha:before-register", () => {
-  XHR.defaults.transformResponse = (xhr) => ({
-    data: xhr.response,
-    message: null,
-    errors: null,
-    status: "success"
-  });
-});
-```
-
-Importante: si quieres cambiar `XHR.defaults.transformResponse`, hazlo antes de que los componentes se registren. La forma recomendada es usar el evento `artha:before-register`.
 
 ## Componentes
 
@@ -173,30 +201,14 @@ Importante: si quieres cambiar `XHR.defaults.transformResponse`, hazlo antes de 
 
 Componente para mostrar mensajes visuales.
 
-#### Tipos soportados
+Tipos soportados:
 
 - `info`
 - `success`
 - `warning`
 - `error`
 
-#### Ejemplo
-
-```html
-<artha-message id="feedback"></artha-message>
-```
-
-```js
-const message = document.getElementById("feedback");
-
-message.info("Cargando información...");
-message.success("Guardado correctamente");
-message.warning("Faltan campos por revisar");
-message.error("Ocurrió un error");
-message.hidden();
-```
-
-#### API pública
+API publica:
 
 - `show(message, type)`
 - `info(message)`
@@ -209,105 +221,122 @@ message.hidden();
 
 Loader visual para estados de carga.
 
-#### Atributos
+Atributos:
 
-- `type`: tipo de loader. Default: `ring`
-- `text`: texto mostrado debajo del loader. Default: `Petición en proceso...`
+- `type`: tipo de loader. Default `ring`
+- `text`: texto mostrado debajo del loader
 
-#### Tipos disponibles
+Tipos disponibles:
 
 - `ring`
 - `dots`
 - `bar`
 - `wave`
 
-Nota: en la implementación actual `bar` y `wave` reutilizan la misma clase visual que `dots`.
-
-#### Ejemplo
-
-```html
-<artha-loader type="ring" text="Cargando usuarios"></artha-loader>
-<artha-loader type="dots" text="Procesando"></artha-loader>
-```
-
 ### `artha-form`
 
-Formulario asíncrono basado en `XMLHttpRequest`.
+Formulario asincrono basado en `XMLHttpRequest`.
 
-#### Comportamiento
+Comportamiento:
 
-- intercepta el evento `submit`
-- valida los campos con `checkValidity()`
-- envía los datos por XHR
+- intercepta `submit`
+- valida con `checkValidity()`
+- envia datos por XHR
 - muestra mensajes con `artha-message`
-- rellena campos automáticamente si la respuesta trae `data`
+- rellena campos automaticamente si la respuesta trae `data`
+- soporta `select`, `artha-select` y elementos `[selectable]`
 
-#### Atributos útiles
+Atributos utiles:
 
-- `action`: endpoint del formulario
-- `method`: método HTTP
-- `response-type`: tipo de respuesta del XHR. Default: `json`
-- `disable-submit`: impide el envío automático al presionar Enter
-- `message-target`: selector interno para localizar el mensaje asociado
-- `id`: usado para identificar la tarea en `TaskQueue`
+- `action`
+- `method`
+- `response-type`
+- `disable-submit`
+- `message-target`
+- `id`
 
-#### API pública
+API publica:
 
 - `submit()`
 - `reset(resetMessage = true)`
 - `resetMessage()`
 - `checkValidity()`
-- `loadInputs(selector = "input,select,textarea")`
+- `loadInputs(selector = "input,select,textarea,artha-select,[selectable]")`
+- `loadInputsSelect(element, data = null)`
 - `fillFromJson(json, reset = true)`
 - `getValue(name)`
 - `input(name)`
 
-#### Eventos emitidos
+Eventos emitidos:
 
 - `load`
 - `resolve`
 - `component-ready`
 
+#### Selects dinamicos dentro de `artha-form`
+
+Si un `select` tiene atributo `action`, Artha cargara sus opciones de forma remota:
+
+```html
+<artha-form action="/users" method="POST">
+  <select name="organism_id" action="/api/organisms"></select>
+</artha-form>
+```
+
+Si ademas defines `refresh-on`, el select se recargara cuando ese evento global ocurra:
+
+```html
+<select
+  name="organism_id"
+  action="/api/organisms"
+  refresh-on="organisms:reload">
+</select>
+```
+
 ### `artha-container`
 
-Componente para cargar, renderizar y refrescar datos remotos, o actualizar vistas existentes.
+Componente para cargar, renderizar y refrescar datos remotos.
 
-#### Casos de uso
+Casos de uso:
 
 - listados
 - tarjetas
 - tablas simples
-- bloques con plantillas HTML
-- selección simple o múltiple
-- búsqueda con `input-search`
-- paginación simple
-- refresco desde eventos globales
+- contenedores anidados
+- seleccion simple o multiple
+- busqueda con `input-search`
+- paginacion
+- refresco via `EventBus`
 
-#### Atributos útiles
+Atributos utiles:
 
-- `action`: endpoint a consultar
-- `method`: método HTTP. Default: `GET`
-- `page`: página actual cuando hay paginación. Default: `1`
-- `search`: criterio de búsqueda interno
-- `response-type`: tipo de respuesta del XHR usado por el contenedor. Default: `json`
-- `template`: id de un `<template>` o referencia configurada en el componente
-- `pagination`: cantidad por página enviada en la query. Default: `10`
-- `message`: referencia al mensaje asociado
-- `message-target`: selector interno alternativo para localizar un `artha-message`
-- `searcher`: crea internamente un `input-search` y lo conecta al contenedor
-- `selectable`: permite seleccionar items
-- `multiple`: permite múltiples selecciones
-- `refresh-on`: nombres de eventos del `EventBus`, separados por coma
-- `id`: identificador del contenedor
+- `action`
+- `action_router`
+- `method`
+- `name`
+- `page`
+- `search`
+- `response-type`
+- `template`
+- `pagination`
+- `message`
+- `message-target`
+- `searcher`
+- `selectable`
+- `multiple`
+- `refresh-on`
+- `id`
 
-#### API pública
+API publica:
 
 - `hasAction()`
 - `hasPagination()`
+- `router(id)`
 - `refresh(search = null)`
 - `refreshWithData(data)`
 - `render(results, refresh = false, refreshChildren = true)`
 - `renderItem(data, refreshChildren = true, update = null)`
+- `renderMessage(message, status = "info")`
 - `nextPage()`
 - `prevPage()`
 - `goToPage(page)`
@@ -316,52 +345,7 @@ Componente para cargar, renderizar y refrescar datos remotos, o actualizar vista
 - `selection()`
 - propiedad `value`
 
-#### Selección
-
-Si `selectable` está activo:
-
-- `container.value` devuelve el id seleccionado
-- si también `multiple` está activo, devuelve un arreglo de ids
-- `reset()` limpia la selección actual
-
-#### Búsqueda
-
-Si `searcher` está activo, `artha-container` crea un `<input-search>` interno y escucha:
-
-- `search`: actualiza `search`, ejecuta `refresh()` y reinicia `page` a `1`
-- `cancel-search`: aborta la petición XHR activa si existe
-
-#### Paginación
-
-Si el contenedor tiene el atributo `pagination`, enviará estos parámetros en la query:
-
-- `pagination`
-- `page`
-
-Ejemplo:
-
-```html
-<artha-container
-  id="users"
-  action="/api/users"
-  template="user-card"
-  pagination="10"
-  searcher>
-</artha-container>
-```
-
-Y desde JavaScript:
-
-```js
-const container = document.getElementById("users");
-
-container.nextPage();
-container.prevPage();
-container.goToPage(3);
-container.resetPagination(true);
-```
-
-#### Eventos emitidos
+Eventos emitidos:
 
 - `load`
 - `resolve`
@@ -369,13 +353,14 @@ container.resetPagination(true);
 - `item-rendered`
 - `item-selected`
 - `item-deselected`
+- `message-rendered`
 - `component-ready`
 
-#### Sistema `data-wire`
+#### `data-wire`
 
 El renderizado se basa en atributos `data-wire` dentro de la plantilla.
 
-Formato general:
+Formatos soportados:
 
 ```html
 data-wire="ruta"
@@ -385,33 +370,22 @@ data-wire="ruta:boolean"
 data-wire="ruta:boolean:chooser"
 ```
 
-#### Ejemplos de `data-wire`
+Tambien puedes usar multiples wires separados por coma:
 
-Texto simple:
+```html
+<span data-wire="email,name:title"></span>
+```
+
+Ejemplos:
 
 ```html
 <span data-wire="name"></span>
-```
-
-Propiedad anidada:
-
-```html
 <span data-wire="user.email"></span>
-```
-
-Append sobre contenido actual:
-
-```html
 <span data-wire="price:textContent:append">$ </span>
-```
-
-Booleano como check o cross:
-
-```html
 <span data-wire="active:boolean"></span>
 ```
 
-Booleano con selección por plantilla:
+Chooser:
 
 ```html
 <div data-wire="status:boolean:chooser">
@@ -427,11 +401,7 @@ Booleano con selección por plantilla:
 </div>
 ```
 
-#### Renderizado de arreglos
-
-El componente soporta rutas terminadas en `[]` para iterar datos. Internamente, busca elementos marcados con `fillable` o `iterable`.
-
-Ejemplo conceptual:
+Arreglos simples:
 
 ```html
 <ul data-wire="tags[]">
@@ -441,78 +411,116 @@ Ejemplo conceptual:
 </ul>
 ```
 
-Nota: el flujo más sólido en la implementación actual es renderizar texto, booleanos y arreglos. Si quieres usar mapeos más avanzados, conviene probarlos primero en tu caso concreto.
+### `artha-select`
+
+Componente de seleccion custom con soporte de formularios nativos.
+
+Caracteristicas:
+
+- soporte `formAssociated`
+- seleccion simple o multiple
+- `required`, `readonly` y `disabled`
+- carga remota de opciones mediante `action`
+- eventos `input` y `change`
+
+Atributos utiles:
+
+- `name`
+- `action`
+- `method`
+- `multiple`
+- `required`
+- `readonly`
+- `disabled`
+
+API publica:
+
+- propiedad `value`
+- `selection()`
+- `isSelect(option)`
+- `select(option, emit = true)`
+- `deselect(option, emit = true)`
+- `reset(emit = true)`
+- `checkValidity()`
+- `reportValidity()`
+- `setCustomValidity(message)`
+- `render(data = null)`
+
+Eventos emitidos:
+
+- `select`
+- `deselect`
+- `reset`
+- `input`
+- `change`
+
+Ejemplo simple:
+
+```html
+<artha-select name="role_id">
+  <option value="1">Admin</option>
+  <option value="2">Editor</option>
+</artha-select>
+```
+
+Ejemplo remoto:
+
+```html
+<artha-select
+  name="organism_id"
+  action="/api/organisms"
+  multiple>
+</artha-select>
+```
+
+### `artha-field`
+
+Componente para edicion inline de un campo usando la logica de `artha-form`.
+
+Permite:
+
+- mostrar un valor visible
+- alternar entre lectura y edicion
+- guardar por XHR
+- cancelar cambios locales
+
+Ejemplo:
+
+```html
+<artha-field action="/users/1" method="PUT">
+  <span field-value="name"></span>
+  <input type="text" name="name" class="hidden" value="Ana">
+</artha-field>
+```
 
 ### `input-search`
 
-Componente de búsqueda con debounce pensado para integrarse con `artha-container`.
+Componente de busqueda con debounce pensado para integrarse con `artha-container`.
 
-#### Atributos
+Atributos:
 
-- `delay`: milisegundos de espera antes de emitir la búsqueda. Default: `300`
-- `text`: placeholder del input. Default: `Buscar`
+- `delay`: default `300`
+- `text`: placeholder del input
 
-#### API pública
+API publica:
 
 - `search()`
 
-#### Eventos emitidos
+Eventos emitidos:
 
-- `search`: emite `{ query }`
-- `cancel-search`: emite `{ query }` cuando se cancela una búsqueda en cola
-
-#### Ejemplo
-
-```html
-<input-search delay="300" text="Buscar usuarios"></input-search>
-```
-
-```js
-const search = document.querySelector("input-search");
-
-search.addEventListener("search", (evt) => {
-  console.log(evt.detail.query);
-});
-```
+- `search`
+- `cancel-search`
 
 ## Core
-
-### `BaseComponent`
-
-Clase base para los custom elements de la librería. Gestiona atributos, propiedades, defaults, booleanos, referencias a elementos y eventos de cambio.
-
-#### Opciones de configuración
-
-- `booleans`: lista de props booleanas
-- `element_refs`: props que apuntan a elementos del DOM por atributo `id` o por referencia en memoria
-- `defaults`: valores por defecto
-- `resolvers`: getter/setter personalizado por prop
-- `reflect`: permite indicar props que no deben reflejarse como atributos HTML
-
-#### `reflect`
-
-Cuando una prop se define con `reflect: false`, `BaseComponent` la guarda en memoria y no usa `setAttribute()` ni `getAttribute()`.
-
-Ejemplo conceptual:
-
-```js
-super(["search", "page"], {
-  reflect: {
-    search: false
-  }
-});
-```
-
-Esto es útil para estado interno que no conviene escribir en el DOM.
 
 ### `XHR`
 
 Wrapper de `XMLHttpRequest` con callbacks y opciones centralizadas.
 
-#### Uso básico
+Uso basico:
 
 ```js
-import { XHR } from "./dist/artha.min.js";
+import { XHR } from "@dogiloki/artha-js";
 
 XHR.request({
   url: "/api/users",
@@ -521,29 +529,26 @@ XHR.request({
     Accept: "application/json"
   },
   onData: (xhr, data) => {
-    console.log("ok", data);
-  },
-  onError: (error) => {
-    console.error("error", error);
+    console.log(data);
   }
 });
 ```
 
-#### Opciones disponibles
+Opciones utiles:
 
-- `method`: default `GET`
-- `url`: URL final
-- `uri`: alternativa para construir `"/" + uri"`
-- `headers`: headers adicionales
-- `data`: datos del formulario
-- `query`: query params para GET
-- `files`: archivos o listas de archivos
-- `response_type`: default `json`
-- `with_credentials`: default `false`
-- `timeout`: default `0`
-- `retry`: reintenta en `error` o `timeout`
-- `retry_delay`: default `5000`
-- `transformResponse(xhr)`: transforma `xhr.response`
+- `method`
+- `url`
+- `uri`
+- `headers`
+- `data`
+- `query`
+- `files`
+- `response_type`
+- `with_credentials`
+- `timeout`
+- `retry`
+- `retry_delay`
+- `transformResponse(xhr)`
 - `onLoad(xhr)`
 - `onData(xhr, transformed)`
 - `onError(transformed)`
@@ -552,127 +557,54 @@ XHR.request({
 - `onAbort(transformed)`
 - `onAction(xhr)`
 
-#### Notas de comportamiento
+Notas de comportamiento:
 
-- si existe `<meta name="csrf-token">` o `<meta name="csrf_token">`, se envía como header `X-CSRF-Token`
-- para métodos distintos de `GET`, la librería envía `FormData`
-- también agrega `_method` dentro del `FormData`
-- si hay token CSRF, también agrega `csrf_token` al cuerpo
-
-#### Ejemplo con `transformResponse`
-
-Si tu API no responde con la forma esperada por `ArthaForm` o `ArthaContainer`, puedes normalizarla con `XHR.defaults.transformResponse`.
-
-Importante: configúralo antes de que se registren los componentes. La forma recomendada es hacerlo dentro de `artha:before-register`.
-
-```js
-import { EventBus, XHR } from "./dist/artha.min.js";
-
-EventBus.on("artha:before-register", () => {
-  XHR.defaults.transformResponse = (xhr) => {
-    const raw = xhr.response;
-
-    // El atributo status se puede omitir si prefieres usar la validación por código HTTP.
-    // En este ejemplo se normaliza de forma explícita.
-    return {
-      status: xhr.status >= 200 && xhr.status < 300 ? "success" : "error",
-      message: raw?.message ?? null,
-      errors: raw?.errors ?? null,
-      data: raw?.result ?? raw?.data ?? raw
-    };
-  };
-});
-```
-
-Ejemplo de respuesta original:
-
-```json
-{
-  "result": [
-    { "id": 1, "name": "Ana" },
-    { "id": 2, "name": "Luis" }
-  ],
-  "message": "OK"
-}
-```
-
-Respuesta normalizada:
-
-```js
-{
-  status: "success",
-  message: "OK",
-  errors: null,
-  data: [
-    { id: 1, name: "Ana" },
-    { id: 2, name: "Luis" }
-  ]
-}
-```
+- acepta meta tags `csrf-token`, `csrf_token` y `_token`
+- envia el token como header `X-CSRF-Token`
+- para metodos distintos de `GET`, envia `FormData`
+- agrega `_token` al cuerpo cuando existe
+- agrega `_method` si no fue enviado manualmente
 
 ### `TaskQueue`
 
-Evita ejecutar dos tareas con el mismo id al mismo tiempo y centraliza el cierre de estados.
+Evita ejecutar dos tareas con el mismo id al mismo tiempo y centraliza estados.
 
-#### Uso básico
+Uso basico:
 
 ```js
-import { TaskQueue } from "./dist/artha.min.js";
+import { TaskQueue } from "@dogiloki/artha-js";
 
 const queue = TaskQueue.singleton();
-
-queue.loadTask("save-user", "Guardando usuario...", (task) => {
-  setTimeout(() => {
-    task.resolve({
-      status: 200,
-      response: JSON.stringify({
-        status: "success",
-        message: "Usuario guardado",
-        data: { id: 1 }
-      })
-    });
-  }, 500);
-}, {
-  close: true
-});
 ```
 
-#### Defaults
+Defaults:
 
 ```js
 TaskQueue.defaults = {
-  title: "Petición en proceso...",
+  title: "Peticion en proceso...",
   close: false,
   message: null
 };
 ```
 
-#### Observaciones
-
-- cada tarea necesita un id único
-- si se repite el id mientras sigue activa, se cancela la nueva tarea
-- si se pasa un `ArthaMessage`, la cola actualiza sus estados visuales
-- `close: true` intenta cerrar el mensaje automáticamente al finalizar
-
 ### `EventBus`
 
 Bus global basado en `EventTarget`.
 
-#### Uso
+Uso:
 
 ```js
-import { EventBus } from "./dist/artha.min.js";
+import { EventBus } from "@dogiloki/artha-js";
 
 const unsubscribe = EventBus.on("users:reload", (data) => {
-  console.log("recargar", data);
+  console.log(data);
 });
 
 EventBus.emit("users:reload", { source: "manual" });
-EventBus.emitAsync("users:reload", { source: "async" });
 unsubscribe();
 ```
 
-#### API pública
+API publica:
 
 - `EventBus.emit(name, data)`
 - `EventBus.emitAsync(name, data)`
@@ -683,67 +615,68 @@ unsubscribe();
 - `EventBus.clean(name)`
 - `EventBus.clearAll()`
 
-#### Debug
+### `SPA`
+
+Utilidad ligera para navegacion por secciones usando un menu y un contenedor.
+
+Funcionamiento:
+
+- busca elementos con atributo `key` dentro del menu
+- busca contenidos con el mismo `key`
+- oculta todos los contenidos
+- activa el contenido correspondiente al hacer click
+
+Ejemplo:
 
 ```js
-EventBus.debug = true;
+import { SPA } from "@dogiloki/artha-js";
+
+new SPA({
+  menu: document.getElementById("menu"),
+  content: document.getElementById("content")
+});
 ```
 
-### `Util`
+### Helpers
 
-Utilidades generales.
+Helpers exportados:
 
-#### API pública
-
-- `Util.getMeta(name)`
-- `Util.getValueByPath(obj, path, defaultValue = null)`
-- `Util.modal(element, visible = -1)`
-- `Util.modalById(id, visible = -1)`
-- `Util.formatMoney(value, options = {})`
-- `Util.numberRandom(min, max)`
-- `Util.withinRange(value, min, max)`
-- `Util.createElement(type, value = null, options = {})`
-
-#### Ejemplos
-
-```js
-Util.getMeta("csrf-token");
-Util.getValueByPath({ user: { name: "Ana" } }, "user.name");
-Util.modalById("panel", true);
-Util.formatMoney("1234.5");
-Util.numberRandom(1, 10);
-Util.withinRange(204, 200, 299);
-```
+- `DataHelper`
+- `DOMHelper`
+- `FormatHelper`
+- `FormHelper`
+- `NumberHelper`
+- `StringHelper`
 
 ## Flujo de respuesta esperado
 
-`ArthaForm` y `ArthaContainer` funcionan mejor cuando el backend responde con una estructura parecida a esta:
+Artha funciona mejor cuando el backend responde con una estructura como esta:
 
 ```json
 {
   "status": "success",
-  "message": "Operación completada",
+  "message": "Operacion completada",
   "data": []
 }
 ```
 
-También soporta errores con este formato:
+Para errores:
 
 ```json
 {
   "status": "error",
-  "message": "No se pudo completar la operación",
+  "message": "No se pudo completar la operacion",
   "errors": {
     "email": ["El correo ya existe"]
   }
 }
 ```
 
-Si tu API responde con otro formato, puedes adaptar la salida usando `XHR.defaults.transformResponse`.
+Si tu API responde distinto, puedes normalizarla con `XHR.defaults.transformResponse`.
 
-## Eventos útiles
+## Eventos utiles
 
-### Eventos de componentes
+Eventos de componentes:
 
 - `component-ready`
 - `load`
@@ -752,24 +685,27 @@ Si tu API responde con otro formato, puedes adaptar la salida usando `XHR.defaul
 - `item-rendered`
 - `item-selected`
 - `item-deselected`
+- `message-rendered`
 - `search`
 - `cancel-search`
+- `select`
+- `deselect`
+- `change`
+- `input`
 
-### Eventos globales de Artha
+Eventos globales:
 
 - `artha:before-register`
 - `artha:after-register`
 
-### Ejemplo de refresco entre componentes
+Ejemplo de refresco:
 
 ```js
-import { EventBus } from "./dist/artha.min.js";
+import { EventBus } from "@dogiloki/artha-js";
 
 EventBus.emit("users:updated", { id: 3, name: "Nuevo nombre" });
 EventBus.emit("users:reload");
 ```
-
-Y en el contenedor:
 
 ```html
 <artha-container
@@ -781,37 +717,51 @@ Y en el contenedor:
 
 ## Desarrollo
 
-### Instalar dependencias
+Instalar dependencias:
 
 ```bash
 npm install
 ```
 
-### Desarrollo
-
-Compilar CSS en modo watch:
-
-```bash
-npm run dev:css
-```
-
-Levantar servidor local:
-
-```bash
-npm run dev:server
-```
-
-Ejecutar ambos:
+Modo desarrollo:
 
 ```bash
 npm run dev
 ```
 
-### Build
+Scripts disponibles:
+
+- `npm run dev:css`
+- `npm run dev:js`
+- `npm run dev:server`
+- `npm run build`
+- `npm run build:css`
+- `npm run build:js`
+- `npm run build:debug`
+- `npm run build:debug:css`
+- `npm run build:debug:js`
+
+Build de produccion:
 
 ```bash
 npm run build
 ```
+
+Esto genera:
+
+- `dist/artha.min.css`
+- `dist/artha.min.js`
+
+Build de depuracion:
+
+```bash
+npm run build:debug
+```
+
+Esto genera:
+
+- `dist/artha.css`
+- `dist/artha.js`
 
 ## Licencia
 

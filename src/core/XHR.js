@@ -70,7 +70,7 @@ export default class XHR{
         xhr.timeout=timeout;
 
         // Encabezados
-        const token=DOMHelper.getMeta("csrf-token")??DOMHelper.getMeta("csrf_token");
+        const token=DOMHelper.getMeta("csrf-token")??DOMHelper.getMeta("csrf_token")??DOMHelper.getMeta("_token");
         if(token){
             xhr.setRequestHeader("X-CSRF-Token",token);
         }
@@ -82,8 +82,8 @@ export default class XHR{
         let body=null;
         if(method!=='GET'){
             const form_data=new FormData();
-            if(token) form_data.append("csrf_token",token);
-            form_data.append("_method",method);
+            if(token) form_data.append("_token",token);
+            if(!data['_method']) form_data.append("_method",method);
             for(let key in data){
                 form_data.append(key,data[key]);
             }
@@ -103,11 +103,7 @@ export default class XHR{
         // Carga con datos según la respuesta
         xhr.addEventListener("load",()=>{
             onLoad(xhr);
-            if(NumberHelper.withinRange(xhr.status,200,299)){
-                onData(xhr,safeTransform(xhr));
-            }else{
-                onError(safeTransform(xhr));
-            }
+            onData(xhr,safeTransform(xhr));
         });
 
         // Error

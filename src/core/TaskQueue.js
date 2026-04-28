@@ -130,6 +130,7 @@ class TaskQueueItem{
         }
         // Obtener mensaje
         let message=null;
+        /*
         if(json.errors && typeof json.errors==='object'){
             const values=Object.values(json.errors);
             if(values.length>0){
@@ -137,6 +138,7 @@ class TaskQueueItem{
                 message=Array.isArray(first)?first[0]:first;
             }
         }
+        */
         message=message||json.message||"Operación completada";
         // Validar respuesta http
         if(NumberHelper.withinRange(data.status,200,299)){

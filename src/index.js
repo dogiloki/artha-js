@@ -10,12 +10,15 @@ import StringHelper from './helpers/StringHelper.js';
 import EventBus from './core/EventBus.js';
 import TaskQueue from './core/TaskQueue.js';
 import XHR from './core/XHR.js';
+import SPA from './core/SPA.js';
 
 // Core
 import ArthaMessage from './components/artha-message.js';
 import ArthaLoader from './components/artha-loader.js';
 import ArthaContainer from './components/artha-container.js';
 import ArthaForm from './components/artha-form.js';
+import ArthaField from './components/artha-field.js';
+import ArthaSelect from './components/artha-select.js';
 import InputSearch from './components/input-search.js';
 
 export {
@@ -28,10 +31,13 @@ export {
     EventBus,
     TaskQueue,
     XHR,
+    SPA,
     ArthaMessage,
     ArthaLoader,
     ArthaContainer,
     ArthaForm,
+    ArthaField,
+    ArthaSelect,
     InputSearch
 };
 
@@ -56,5 +62,11 @@ function registerComponents(){
     }
     if(!customElements.get('input-search')){
         customElements.define('input-search',InputSearch);
+    }
+    if(!customElements.get('artha-field')){
+        customElements.define('artha-field',ArthaField);
+    }
+    if(!customElements.get('artha-select')){
+        customElements.define('artha-select',ArthaSelect);
     }
 }

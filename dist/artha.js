@@ -837,7 +837,7 @@ var XHR = class _XHR {
     xhr.responseType = response_type;
     xhr.withCredentials = with_credentials;
     xhr.timeout = timeout;
-    const token = DOMHelper.getMeta("csrf-token") ?? DOMHelper.getMeta("csrf_token");
+    const token = DOMHelper.getMeta("csrf-token") ?? DOMHelper.getMeta("csrf_token") ?? DOMHelper.getMeta("_token");
     if (token) {
       xhr.setRequestHeader("X-CSRF-Token", token);
     }
@@ -847,8 +847,8 @@ var XHR = class _XHR {
     let body = null;
     if (method !== "GET") {
       const form_data = new FormData();
-      if (token) form_data.append("csrf_token", token);
-      form_data.append("_method", method);
+      if (token) form_data.append("_token", token);
+      if (!data["_method"]) form_data.append("_method", method);
       for (let key in data) {
         form_data.append(key, data[key]);
       }
@@ -866,11 +866,7 @@ var XHR = class _XHR {
     }
     xhr.addEventListener("load", () => {
       onLoad(xhr);
-      if (NumberHelper.withinRange(xhr.status, 200, 299)) {
-        onData(xhr, safeTransform(xhr));
-      } else {
-        onError(safeTransform(xhr));
-      }
+      onData(xhr, safeTransform(xhr));
     });
     xhr.addEventListener("error", () => {
       const retry_options = { ...options };
@@ -1013,13 +1009,6 @@ var TaskQueueItem = class {
       return;
     }
     let message = null;
-    if (json.errors && typeof json.errors === "object") {
-      const values = Object.values(json.errors);
-      if (values.length > 0) {
-        const first = values[0];
-        message = Array.isArray(first) ? first[0] : first;
-      }
-    }
     message = message || json.message || "Operaci\xF3n completada";
     if (NumberHelper.withinRange(data.status, 200, 299)) {
       if (message) {
@@ -1051,6 +1040,51 @@ var TaskQueueItem = class {
     this._reject(error);
   }
   removeElement() {
+  }
+};
+
+// src/core/SPA.js
+var SPA = class {
+  static defaults = {
+    menu: null,
+    content: null
+  };
+  constructor(options) {
+    options = { ...this.defaults, ...options };
+    const {
+      menu,
+      content
+    } = options;
+    this.menu = options.menu;
+    this.content = options.content;
+    this._init();
+    this._bindEvents();
+  }
+  _init() {
+    this.routes = Object.fromEntries(
+      Array.from(this.menu.querySelectorAll("[key]")).map((el) => [el.getAttribute("key"), el])
+    );
+    this.contents = Object.fromEntries(
+      Array.from(this.content.querySelectorAll("[key]")).map((el) => [el.getAttribute("key"), el])
+    );
+    this._hiddenAll();
+  }
+  _hiddenAll() {
+    for (const content of Object.values(this.contents)) {
+      DOMHelper.modal(content, false);
+    }
+    for (const route of Object.values(this.routes)) {
+      route.classList.remove("active");
+    }
+  }
+  _bindEvents() {
+    for (const route of Object.values(this.routes)) {
+      route.addEventListener("click", (evt) => {
+        this._hiddenAll();
+        route.classList.add("active");
+        DOMHelper.modal(this.contents[route.getAttribute("key")]);
+      });
+    }
   }
 };
 
@@ -1167,6 +1201,7 @@ var ArthaLoader = class _ArthaLoader extends BaseComponent {
 
 // src/components/artha-container.js
 var ArthaContainer = class _ArthaContainer extends BaseComponent {
+  static formAssociated = true;
   static defaults = {
     method: "GET",
     pagination: 10,
@@ -1182,6 +1217,7 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
         "method",
         "page",
         "search",
+        "name",
         "pagination",
         "message",
         "searcher",
@@ -1193,7 +1229,8 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
         booleans: ["searcher", "selectable", "multiple"],
         element_refs: ["template", "message"],
         defaults: {
-          response_type: _ArthaContainer.defaults.response_type
+          response_type: _ArthaContainer.defaults.response_type,
+          method: _ArthaContainer.defaults.method
         },
         reflect: {
           search: false,
@@ -1300,6 +1337,10 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
       }
     }
   }
+  router(id) {
+    this.action = this.action_router.replaceAll("__ID__", id);
+    return this;
+  }
   getData(search = null) {
     search ??= this.search;
     if (!this.action) return;
@@ -1330,13 +1371,13 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
           task.resolve(xhr, () => {
             this.dispatchEvent(new CustomEvent("resolve", { detail: json }));
             if (json.message) {
-              this.message?.show(json.message, json.status);
+              this.renderMessage(json.message, json.status);
             }
             this.render(json.data);
           });
         },
         onError: (err) => {
-          this.message?.error(err ?? "Error de conexi\xF3n");
+          this.renderMessage(err ?? "Error de conexi\xF3n", "error");
           task.onFinalize();
           this._cancelSearch();
         },
@@ -1379,11 +1420,11 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
   }
   refresh(search = null) {
     search ??= this.search;
-    this.loader_container.remove();
+    if (this.loader_container) this.loader_container.remove();
     if (this.template) {
       this.content.innerHTML = "";
       if (this._content) this.content.appendChild(this._content);
-      this.content.appendChild(this.loader_container);
+      if (this.loader_container) this.content.appendChild(this.loader_container);
     }
     return this.getData(search);
   }
@@ -1399,7 +1440,7 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
     results = Array.isArray(results) ? results : [results];
     this.data = results;
     this.items = [];
-    this.loader_container.remove();
+    if (this.loader_container) this.loader_container.remove();
     for (const data of results) this.renderItem(data, refresh_children);
     this.dispatchEvent(new CustomEvent("dynamic-content-loaded", { detail: results }));
   }
@@ -1445,6 +1486,10 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
     if (this.template && !update) this.content.appendChild(element);
     this.dispatchEvent(new CustomEvent("item-rendered", { detail: { item: element, data, index } }));
     index++;
+  }
+  renderMessage(message, status = "info") {
+    if (this.message) this.message.show(message, status);
+    this.dispatchEvent(new CustomEvent("message-rendered", { detail: { message, status } }));
   }
   _fillArray(item, data, value) {
     const fill_template = item.children[0].cloneNode(true);
@@ -1670,15 +1715,13 @@ var ArthaForm = class _ArthaForm extends BaseComponent {
         case "reset":
           btn.addEventListener("click", (evt) => this.reset());
           break;
-        default:
-          btn.addEventListener("click", (evt) => this.submit());
       }
     });
     this.querySelector('[type="submit"]')?.addEventListener("click", (evt) => this.submit());
     this.querySelector('[type="reset"]')?.addEventListener("click", (evt) => this.reset());
   }
   // Cargar inputs dinámicos
-  loadInputs(selector = "input,select,textarea") {
+  loadInputs(selector = "input,select,textarea,artha-select,[selectable]") {
     this.element_inputs = [];
     this.querySelectorAll(selector).forEach((element) => {
       const name = element.getAttribute("name");
@@ -1686,7 +1729,57 @@ var ArthaForm = class _ArthaForm extends BaseComponent {
         this[name] = element;
         this.element_inputs.push(element);
       }
+      if (element.tagName.toLowerCase() === "select") {
+        const channels = (element.getAttribute("refresh-on") || "").split(",").map((c) => c.trim()).filter((c) => c.length > 0);
+        this._refresh_listeners = [];
+        for (const channel of channels) {
+          const listener = (evt) => evt?.detail ? this.loadInputsSelect(element, evt.detail) : this.loadInputsSelect(element);
+          EventBus.on(channel, listener);
+          this._refresh_listeners.push({ channel, listener });
+        }
+        this.loadInputsSelect(element);
+      }
     });
+  }
+  loadInputsSelect(element, data = null) {
+    element.innerHTML = "";
+    const action = element.getAttribute("action") ?? null;
+    if (!action) return;
+    const artha_container = document.createElement("artha-container");
+    const option = document.createElement("option");
+    option.value = -1;
+    option.textContent = TaskQueue.defaults.title;
+    element.appendChild(option);
+    artha_container.id = crypto.randomUUID();
+    artha_container.action = action;
+    artha_container.method = element.getAttribute("method") ?? "GET";
+    artha_container.addEventListener("message-rendered", (evt) => {
+      const { message, status } = evt.detail;
+      option.textContent = message;
+    });
+    artha_container.addEventListener("resolve", (evt) => {
+      const json = evt.detail;
+      if (json.data) {
+        element.innerHTML = "";
+        json.data.forEach((item) => {
+          const option2 = document.createElement("option");
+          option2.value = item.id;
+          option2.textContent = item.show;
+          element.appendChild(option2);
+        });
+      }
+    });
+    if (data) {
+      data = Array.isArray(data) ? data : [data];
+      data.forEach((item) => {
+        const option2 = document.createElement("option");
+        option2.value = item.id;
+        option2.textContent = item.show;
+        element.appendChild(option2);
+      });
+    } else {
+      artha_container.refresh();
+    }
   }
   // Obtener valor de un input por el atributo name
   getValue(name) {
@@ -1727,11 +1820,16 @@ var ArthaForm = class _ArthaForm extends BaseComponent {
   submit() {
     if (!this.checkValidity()) {
       this.message.warning("Formulario incompleto");
+      this.dispatchEvent(new CustomEvent("load", { detail: null }));
       return;
     }
     const form_data = {};
     this.element_inputs.forEach((element) => {
-      form_data[element.name] = element.type === "checkbox" ? element.checked ? 1 : 0 : element.value;
+      let value = element.type === "checkbox" ? element.checked ? 1 : 0 : element.value;
+      if (value === "null" || value === null) {
+        value = "";
+      }
+      form_data[element.name] = value;
     });
     const id = this.getAttribute("id");
     this.task_queue.loadTask(`form-${id}`, null, (task) => {
@@ -1763,9 +1861,323 @@ var ArthaForm = class _ArthaForm extends BaseComponent {
     if (reset) this.reset(false);
     for (const key in json) {
       const element = this.querySelector(`[name="${key}"]`);
-      console.log(element);
       if (element) element.value = json[key];
     }
+  }
+};
+
+// src/components/artha-field.js
+var ArthaField = class extends ArthaForm {
+  constructor() {
+    super();
+    super.onConnected();
+    this.mode_edition = false;
+    this.original_value = null;
+    this._initialized_artha_field = false;
+  }
+  onConnected() {
+    if (this._initialized_artha_field) return;
+    this.field_value = this.querySelector("[field-value]");
+    let attribute = this.field_value.getAttribute("field-value").split(":");
+    this.field_value_name = attribute[0];
+    this.field_value_attrib = attribute[1] ?? "value";
+    this.field_input = this.querySelector("[name='" + this.field_value_name + "']");
+    this.original_value = this.field_value.textContent;
+    this.changeValue(this.original_value);
+    this.button_edit = DOMHelper.createElement("button", (button) => {
+      button.textContent = "\u270F\uFE0F";
+      button.classList.add("field-button", "edit-button");
+      button.addEventListener("click", (evt) => {
+        evt.preventDefault();
+        this.modeEdition(true);
+      });
+    });
+    this.button_save = DOMHelper.createElement("button", (button) => {
+      button.textContent = "\u{1F4BE}";
+      button.classList.add("field-button", "save-button");
+      button.addEventListener("click", (evt) => {
+        evt.preventDefault();
+        this.save();
+      });
+    });
+    this.button_cancel = DOMHelper.createElement("button", (button) => {
+      button.textContent = "\u274C";
+      button.classList.add("field-button", "cancel-button");
+      button.addEventListener("click", (evt) => {
+        evt.preventDefault();
+        this.modeEdition(false);
+      });
+    });
+    this.addEventListener("load", (evt) => {
+      this.button_edit.classList.remove("hidden");
+      this.button_save.classList.remove("hidden");
+      this.button_cancel.classList.remove("hidden");
+    });
+    this.modeEdition(false);
+    this.field_value.parentElement.appendChild(this.button_edit);
+    this.field_value.parentElement.appendChild(this.button_save);
+    this.field_value.parentElement.appendChild(this.button_cancel);
+    this._initialized_artha_field = true;
+  }
+  changeValue(new_value) {
+    if (!this.field_input) return;
+    if (this.field_input.tagName == "SELECT") {
+      this.field_input[this.field_value_attrib] = new_value;
+      new_value = this.field_input.querySelector(`option[value="${new_value}"]`)?.textContent ?? new_value;
+    } else if (this.field_input.tagName === "ARTHA-CONTAINER") {
+      new_value = this.field_input.querySelector(".selected")?.textContent ?? new_value;
+    } else {
+      this.field_input[this.field_value_attrib] = new_value;
+    }
+    this.field_value.textContent = new_value == "" || new_value == null ? "---" : new_value;
+  }
+  modeEdition(active) {
+    this.mode_edition = active;
+    DOMHelper.modal(this.field_value, !active);
+    DOMHelper.modal(this.field_input, active);
+    DOMHelper.modal(this.button_edit, !active);
+    DOMHelper.modal(this.button_save, active);
+    DOMHelper.modal(this.button_cancel, active);
+  }
+  save() {
+    this.original_value = this.field_input[this.field_value_attrib];
+    this.changeValue(this.original_value);
+    this.modeEdition(false);
+    this.button_edit.classList.add("hidden");
+    this.button_save.classList.add("hidden");
+    this.button_cancel.classList.add("hidden");
+    this.submit();
+  }
+};
+
+// src/components/artha-select.js
+var ArthaSelect = class _ArthaSelect extends BaseComponent {
+  static formAssociated = true;
+  static defaults = {
+    method: "GET"
+  };
+  constructor() {
+    super([
+      "required",
+      "readonly",
+      "multiple",
+      "disabled",
+      "action",
+      "method",
+      "name"
+    ], {
+      booleans: ["required", "readonly", "multiple", "disabled"]
+    });
+    this._internals = this.attachInternals();
+    this.options = [];
+    this.selected_options = {};
+    this._initialized = false;
+  }
+  onConnected() {
+    if (this._initialized) return;
+    this.options = [...this.querySelectorAll("option")];
+    if (this.action) {
+      this.method ??= _ArthaSelect.defaults.method;
+      this.render();
+    } else {
+      this._bindEvents();
+      this._syncInitialSelection();
+      this._syncFormValue();
+      this.updateValidity();
+    }
+    this._initialized = true;
+  }
+  get value() {
+    const array = this.selection();
+    if (array.length <= 0) return this.multiple ? [] : null;
+    return this.multiple ? array : array[0];
+  }
+  set value(val) {
+    if (this.multiple) {
+      this.reset(false);
+      const values = Array.isArray(val) ? val : [val];
+      for (const option of this.options) {
+        if (values.includes(option.value)) this.select(option, false);
+      }
+      this._syncFormValue();
+      this.updateValidity();
+    } else {
+      const option = this.options.find((option2) => option2.value == val);
+      if (option) {
+        this.select(option);
+      } else {
+        this.reset();
+      }
+    }
+  }
+  _bindEvents() {
+    for (const option of this.options) {
+      if (option.hasAttribute("selected")) this.select(option, false);
+      if (option._artha_bound) continue;
+      option._artha_bound = true;
+      option.addEventListener("click", (evt) => {
+        evt.preventDefault();
+        if (this.isSelect(option)) {
+          this.deselect(option);
+        } else {
+          this.select(option);
+        }
+      });
+    }
+  }
+  _syncInitialSelection() {
+  }
+  _syncFormValue() {
+    if (this.multiple) {
+      const form_data = new FormData();
+      for (const value of this.selection()) {
+        form_data.append(this.name, value);
+      }
+      this._internals.setFormValue(form_data);
+    } else {
+      this._internals.setFormValue(this.value ?? "");
+    }
+  }
+  _loadOptions(options) {
+    this.innerHTML = "";
+    this.options = [];
+    this.selected_options = {};
+    for (const option of options) {
+      const element = this.renderOption(option);
+      if (element == null) continue;
+      this.appendChild(element);
+      this.options.push(element);
+    }
+    this._bindEvents();
+    this._syncInitialSelection();
+    this._syncFormValue();
+    this.updateValidity();
+  }
+  selection() {
+    return Object.keys(this.selected_options ?? {});
+  }
+  isSelect(option) {
+    return !!option && option.hasAttribute("selected") && this.selected_options.hasOwnProperty(option.value);
+  }
+  select(option, emit = true) {
+    if (!option || this.disabled || this.readonly) return null;
+    if (!this.multiple) {
+      this.reset(false);
+    }
+    this.selected_options[option.value] = option;
+    option.setAttribute("selected", "selected");
+    this._syncFormValue();
+    this.updateValidity();
+    if (emit) {
+      this.dispatchEvent(new CustomEvent("select", { detail: {
+        value: option.value,
+        option
+      } }));
+      this.dispatchEvent(new Event("input", { bubbles: true }));
+      this.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    return option;
+  }
+  deselect(option, emit = true) {
+    if (!option || this.disabled || this.readonly) return;
+    delete this.selected_options[option.value];
+    option.removeAttribute("selected");
+    this._syncFormValue();
+    this.updateValidity();
+    if (emit) {
+      this.dispatchEvent(new CustomEvent("deselect", { detail: {
+        value: option.value,
+        option
+      } }));
+      this.dispatchEvent(new Event("input", { bubbles: true }));
+      this.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+  reset(emit = true) {
+    for (const option of this.options) {
+      option.removeAttribute("selected");
+    }
+    this.selected_options = {};
+    this._syncFormValue();
+    this.updateValidity();
+    if (emit) {
+      this.dispatchEvent(new CustomEvent("reset"));
+      this.dispatchEvent(new Event("input", { bubbles: true }));
+      this.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+  updateValidity() {
+    const has_value = this.multiple ? this.selection().length > 0 : !!this.value;
+    if (this.required && !has_value) {
+      this._internals.setValidity(
+        { valueMissing: true },
+        "Este campo es obligatorio"
+      );
+    } else {
+      this._internals.setValidity({});
+    }
+  }
+  checkValidity() {
+    return this._internals.checkValidity();
+  }
+  reportValidity() {
+    return this._internals.reportValidity();
+  }
+  setCustomValidity(message) {
+    if (message) {
+      this._internals.setValidity(
+        { customError: true },
+        message
+      );
+    } else {
+      this.updateValidity();
+    }
+  }
+  formResetCallback() {
+    this.reset(false);
+  }
+  formDisabledCallback(disabled) {
+    if (disabled) {
+      this.setAttribute("disabled", "");
+    } else {
+      this.removeAttribute("disabled");
+    }
+  }
+  renderOption(data) {
+    return DOMHelper.createElement("option", (element) => {
+      element.value = data.id;
+      element.textContent = data.show;
+    });
+  }
+  render(data = null) {
+    if (data != null) {
+      this._loadOptions(data);
+      return;
+    }
+    if (!this.action) return;
+    this.innerHTML = "";
+    this.readonly = true;
+    const artha_container = document.createElement("artha-container");
+    const option = document.createElement("option");
+    option.value = -1;
+    option.textContent = TaskQueue.defaults.title;
+    this.appendChild(option);
+    artha_container.id = crypto.randomUUID();
+    artha_container.action = this.action;
+    artha_container.method = this.method;
+    artha_container.addEventListener("message-rendered", (evt) => {
+      this.readonly = false;
+      const { message, status } = evt.detail;
+      option.textContent = message;
+    });
+    artha_container.addEventListener("resolve", (evt) => {
+      this.readonly = false;
+      const json = evt.detail;
+      if (json.data) {
+        this._loadOptions(json.data);
+      }
+    });
+    artha_container.refresh();
   }
 };
 
@@ -1908,12 +2320,20 @@ function registerComponents() {
   if (!customElements.get("input-search")) {
     customElements.define("input-search", InputSearch);
   }
+  if (!customElements.get("artha-field")) {
+    customElements.define("artha-field", ArthaField);
+  }
+  if (!customElements.get("artha-select")) {
+    customElements.define("artha-select", ArthaSelect);
+  }
 }
 export {
   ArthaContainer,
+  ArthaField,
   ArthaForm,
   ArthaLoader,
   ArthaMessage,
+  ArthaSelect,
   DOMHelper,
   DataHelper,
   EventBus,
@@ -1921,6 +2341,7 @@ export {
   FormatHelper,
   InputSearch,
   NumberHelper,
+  SPA,
   StringHelper,
   TaskQueue,
   XHR

@@ -1,0 +1,63 @@
+@use './colors.scss' as *;
+
+artha-field{
+    width: 100%;
+    min-width: unset;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    background: transparent;
+    border-bottom: 1px dashed $white4;
+    transition: all 0.2s ease;
+
+    &:hover{
+        border-bottom: 1px dashed $black4;
+
+        .edit-button{
+            transform: scale(1);
+        }
+    }
+    .edit-button{
+        transform: scale(0);
+    }
+    .field-label{
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        color: $black3;
+    }
+    .field-content{
+        display: flex;
+        align-items: center;
+
+        .field-value{
+            width: 100%;
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: $black2;
+            margin-top: 5px;
+            gap: 0.5rem;
+        }
+        .field-input{
+            width: 100%;
+            padding: 5px;
+            font-size: 1rem;
+            border: 1px solid $white4;
+            color: $black2;
+            outline: none;
+        }
+        .field-button{
+            background: transparent;
+            border: none;
+            padding: 5px;
+            font-size: 1.2rem;
+            transform: all 0.2s ease;
+            cursor: pointer;
+
+            &:hover{
+                border-radius: 50%;
+                background-color: $white2;
+            }
+        }
+    }
+}

@@ -7,6 +7,7 @@ import TaskQueue from '../core/TaskQueue.js';
 
 export default class ArthaContainer extends BaseComponent{
 
+    static formAssociated=true;
     static defaults={
         method:'GET',
         pagination:10,
@@ -16,13 +17,14 @@ export default class ArthaContainer extends BaseComponent{
 
     constructor(){
         super(
-            ["template","action","action_router","method","page","search",
+            ["template","action","action_router","method","page","search","name",
             "pagination","message","searcher","selectable","multiple","response_type"],
             {
                 booleans:['searcher','selectable','multiple'],
                 element_refs:['template','message'],
                 defaults:{
-                    response_type:ArthaContainer.defaults.response_type
+                    response_type:ArthaContainer.defaults.response_type,
+                    method:ArthaContainer.defaults.method
                 },
                 reflect:{
                     search:false,
@@ -147,6 +149,11 @@ export default class ArthaContainer extends BaseComponent{
         }
     }
 
+    router(id){
+        this.action=this.action_router.replaceAll('__ID__',id);
+        return this;
+    }
+
     getData(search=null){
         search??=this.search;
         if(!this.action) return;
@@ -178,13 +185,13 @@ export default class ArthaContainer extends BaseComponent{
                     task.resolve(xhr,()=>{
                         this.dispatchEvent(new CustomEvent('resolve',{detail:json}));
                         if(json.message){
-                            this.message?.show(json.message,json.status);
+                            this.renderMessage(json.message,json.status);
                         }
                         this.render(json.data);
                     });
                 },
                 onError:(err)=>{
-                    this.message?.error(err??"Error de conexión");
+                    this.renderMessage(err??"Error de conexión","error");
                     task.onFinalize();
                     this._cancelSearch();
                 },
@@ -234,11 +241,11 @@ export default class ArthaContainer extends BaseComponent{
 
     refresh(search=null){
         search??=this.search;
-        this.loader_container.remove();
+        if(this.loader_container) this.loader_container.remove();
         if(this.template){
             this.content.innerHTML="";
             if(this._content) this.content.appendChild(this._content);
-            this.content.appendChild(this.loader_container);
+            if(this.loader_container) this.content.appendChild(this.loader_container);
         }
         return this.getData(search);
     }
@@ -256,7 +263,7 @@ export default class ArthaContainer extends BaseComponent{
         results=Array.isArray(results)?results:[results];
         this.data=results;
         this.items=[];
-        this.loader_container.remove();
+        if(this.loader_container) this.loader_container.remove();
         for(const data of results) this.renderItem(data,refresh_children);
         this.dispatchEvent(new CustomEvent('dynamic-content-loaded',{detail:results}));
     }
@@ -311,6 +318,11 @@ export default class ArthaContainer extends BaseComponent{
         if(this.template && !update) this.content.appendChild(element);
         this.dispatchEvent(new CustomEvent('item-rendered',{detail:{item:element,data,index}}));
         index++;
+    }
+
+    renderMessage(message,status="info"){
+        if(this.message) this.message.show(message,status);
+        this.dispatchEvent(new CustomEvent('message-rendered',{detail:{message,status}}));
     }
 
     _fillArray(item,data,value){

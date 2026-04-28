@@ -18,7 +18,7 @@
     "dist"
   ],
   "scripts": {
-    "dev:css": "sass --watch src/scss/main.scss:dist/artha.css --style=expanded --source-map",
+    "dev:css": "sass --watch src/scss/main.scss:dist/artha.min.css --style=expanded --source-map",
     "dev:js": "esbuild src/index.js --bundle --format=esm --outfile=dist/artha.js --sourcemap --watch",
     "dev:server": "live-server --watch=. --port=8080",
     "dev": "concurrently \"npm run dev:css\" \"npm run dev:js\" \"npm run dev:server\"",

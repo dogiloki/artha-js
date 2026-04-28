@@ -1,5 +1,36 @@
 # Changelog
 
+## 4.0.0
+
+### Changed
+- Se agrego empaquetado con 'esbuild' para genera 'dist/artha.min.js'.
+- Se unifico la compilación de assets JS y CSS desde 'npm run build'.
+- Se exportaron nuevos modulos de componentes creados al paquete.
+- Se agrego soporte para importar el paquete y sus estilos desde Laravel/Vite.
+- 'artha-container' ahora sopporta 'name' y 'action_router'.
+- 'artha-container' ahora expone 'renderMessage()' y emite el evento 'message-rendered'.
+- 'artha-form' ahora detecta tambien elementos 'artha-select' y elementos '[selectable]' al cargar inputs.
+- Se agrego carga dinamica de opciones 'select' usando 'action' y 'refresh-on'.
+- Se agregaron clases globales de estado '.hidden', '.disabled' y '.enabled'.
+- Se integraron iconos embebidos base64 para evitar dependencias externas de assets.
+
+### Added
+- Nuevo componente 'artha-field' para edición de campos.
+- Nuevo componente 'artha-select' con soporte 'formAssociated', selección simple y multiple.
+- Nuevo modulo 'SPA' para navegación simple basada en menu y contenido.
+- Nuevos estilos para 'artha-field' y 'artha-select'.
+
+### Fidex
+- Se corrigio el flujo de compilación para que 'dev:css' genere 'dist/artha.min.css'.
+- Se corrigio el manejo del token CSRF aceptando 'csrf-token', csrf_token' y '_token'.
+- En 'XHR' ose envio '_token' y se evito sobreescribir '_method' cuando ya existe en los datos.
+- Se corrigio el manejo de respuestas HTTP para que 'onData' procese tambien respuestas no 2xx y la capa superior resuelva el mensaje.
+- Se evitaron errores al remover o volver a insertar 'loader_container' cuando no existe.
+- Se corrigio el manejo de mensajes en 'artha-container', usando 'renderMessage()' tanto en exito como en error.
+- Se removio un 'console.log' residual en 'artha-form'.
+- Se normalizaron valores 'null' en formularios para evitar envios inconsistentes.
+- Se evito que botones sin 'type' en 'artha-form' disparen submit accidentalmente.
+
 ## 3.0.3
 
 ### Fidex

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Prueba ArthaJS</title>
-    <link rel="stylesheet" href="dist/artha.min.css">
+    <link rel="stylesheet" href="./dist/artha.min.css">
     <script type="module">
         import {XHR,EventBus} from './src/index.js';
 
@@ -16,13 +16,21 @@
                 };
             };
         });
+        /*
         const container=document.querySelector('artha-container');
         document.getElementById('refresh').addEventListener('click',(evt)=>{
             container.refresh();
         });
+        */
     </script>
 </head>
 <body>
+    <artha-select multiple action="http://localhost:8000/api/organisms">
+        <option value="1">Opción 1</option>
+        <option value="2">Opción 2</option>
+        <option value="3">Opción 3</option>
+    </artha-select>
+    <!--
     <artha-form
         action="https://api.mockfly.dev/mocks/b5a1a715-2d30-4f60-97ec-7114638083d9/user"
         method="POST">
@@ -46,5 +54,6 @@
             <hr>
         </div>
     </template>
+    -->
 </body>
 </html>

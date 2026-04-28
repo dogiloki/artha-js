@@ -1,0 +1,38 @@
+@use './colors.scss' as *;
+
+artha-select{
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+
+    option{
+        font-size: 1.2rem;
+        display: flex;
+        flex-direction: column;
+        background-color: $white;
+        padding: 0.3rem 0.7rem;
+        box-shadow: 0 0 0 1px $white3;
+        color: $black2;
+        text-align: center;
+        position: relative;
+        transition: all 0.3s ease;
+        cursor: pointer;
+
+        svg{
+            width: 3rem;
+            height: 3rem;
+            margin: 0 auto;
+            margin-bottom: 5px;
+        }
+    }
+    option[selected]{
+        background-color: $black2;
+        color: $white;
+    }
+    option:first-child{
+        border-radius: 0.3rem 0 0 0.3rem;
+    }
+    option:last-child{
+        border-radius: 0 0.3rem 0.3rem 0;
+    }
+}

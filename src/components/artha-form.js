@@ -2,6 +2,7 @@ import DOMHelper from '../helpers/DOMHelper.js';
 import BaseComponent from '../abstract/BaseComponent.js';
 import XHR from '../core/XHR.js';
 import TaskQueue from '../core/TaskQueue.js';
+import EventBus from '../core/EventBus.js';
 
 export default class ArthaForm extends BaseComponent{
     
@@ -70,7 +71,6 @@ export default class ArthaForm extends BaseComponent{
             switch(btn.getAttribute('type')){
                 case 'submit': btn.addEventListener('click',(evt)=>this.submit()); break;
                 case 'reset': btn.addEventListener('click',(evt)=>this.reset()); break;
-                default: btn.addEventListener('click',(evt)=>this.submit());
             }
         });
         this.querySelector('[type="submit"]')?.addEventListener('click',(evt)=>this.submit());
@@ -78,7 +78,7 @@ export default class ArthaForm extends BaseComponent{
     }
 
     // Cargar inputs dinámicos
-    loadInputs(selector="input,select,textarea"){
+    loadInputs(selector="input,select,textarea,artha-select,[selectable]"){
         this.element_inputs=[];
         this.querySelectorAll(selector).forEach((element)=>{
             const name=element.getAttribute('name');
@@ -86,7 +86,58 @@ export default class ArthaForm extends BaseComponent{
                 this[name]=element;
                 this.element_inputs.push(element);
             }
+            if(element.tagName.toLowerCase()==='select'){
+                const channels=(element.getAttribute('refresh-on')||'').split(',').map(c=>c.trim()).filter(c=>c.length>0);
+                this._refresh_listeners=[];
+                for(const channel of channels){
+                    const listener=(evt)=>evt?.detail?this.loadInputsSelect(element,evt.detail):this.loadInputsSelect(element);
+                    EventBus.on(channel,listener);
+                    this._refresh_listeners.push({channel,listener});
+                }
+                this.loadInputsSelect(element);
+            }
         });
+    }
+
+    loadInputsSelect(element,data=null){
+        element.innerHTML="";
+        const action=element.getAttribute('action')??null;
+        if(!action) return;
+        const artha_container=document.createElement('artha-container');
+        const option=document.createElement('option');
+        option.value=-1;
+        option.textContent=TaskQueue.defaults.title;
+        element.appendChild(option);
+        artha_container.id=crypto.randomUUID();
+        artha_container.action=action;
+        artha_container.method=element.getAttribute('method')??'GET';
+        artha_container.addEventListener('message-rendered',(evt)=>{
+            const {message,status}=evt.detail;
+            option.textContent=message;
+        });
+        artha_container.addEventListener('resolve',(evt)=>{
+            const json=evt.detail;
+            if(json.data){
+                element.innerHTML="";
+                json.data.forEach((item)=>{
+                    const option=document.createElement('option');
+                    option.value=item.id;
+                    option.textContent=item.show;
+                    element.appendChild(option);
+                });
+            }
+        });
+        if(data){
+            data=Array.isArray(data)?data:[data];
+            data.forEach((item)=>{
+                const option=document.createElement('option');
+                option.value=item.id;
+                option.textContent=item.show;
+                element.appendChild(option);
+            });
+        }else{
+            artha_container.refresh();
+        }
     }
 
     // Obtener valor de un input por el atributo name
@@ -132,11 +183,17 @@ export default class ArthaForm extends BaseComponent{
     submit(){
         if(!this.checkValidity()){
             this.message.warning('Formulario incompleto');
+            this.dispatchEvent(new CustomEvent('load',{detail:null}));
             return;
         }
         const form_data={};
         this.element_inputs.forEach((element)=>{
-            form_data[element.name]=element.type==='checkbox'?(element.checked?1:0):element.value;
+            let value=element.type==='checkbox'?(element.checked?1:0):element.value;
+            // Normalizar null
+            if(value==="null" || value===null){
+                value="";
+            }
+            form_data[element.name]=value;
         });
         const id=this.getAttribute('id');
         this.task_queue.loadTask(`form-${id}`,null,(task)=>{
@@ -170,7 +227,6 @@ export default class ArthaForm extends BaseComponent{
         if(reset) this.reset(false);
         for(const key in json){
             const element=this.querySelector(`[name="${key}"]`);
-            console.log(element);
             if(element) element.value=json[key];
         }
     }
