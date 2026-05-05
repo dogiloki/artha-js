@@ -4,6 +4,7 @@ import BaseComponent from '../abstract/BaseComponent.js';
 import EventBus from '../core/EventBus.js';
 import XHR from '../core/XHR.js';
 import TaskQueue from '../core/TaskQueue.js';
+import InputSearch from '../components/input-search.js';
 
 export default class ArthaContainer extends BaseComponent{
 
@@ -17,14 +18,15 @@ export default class ArthaContainer extends BaseComponent{
 
     constructor(){
         super(
-            ["template","action","action_router","method","page","search","name",
+            ["template","action","action_router","method","page","search","name","search_mode",
             "pagination","message","searcher","selectable","multiple","response_type"],
             {
                 booleans:['searcher','selectable','multiple'],
                 element_refs:['template','message'],
                 defaults:{
                     response_type:ArthaContainer.defaults.response_type,
-                    method:ArthaContainer.defaults.method
+                    method:ArthaContainer.defaults.method,
+                    search_mode:InputSearch.SEARCH_MODES.server
                 },
                 reflect:{
                     search:false,
@@ -39,9 +41,10 @@ export default class ArthaContainer extends BaseComponent{
 
         this.task_queue=TaskQueue.singleton();
         this._current_xhr=null;
-        this.items={};
+        this.items=[];
         this.selection_store=new SelectionStore();
         this._initialized=false;
+        this._onRefresh=(evt)=>this._handleRefresh(evt);
         this._onSearch=(evt)=>this._handleSearch(evt);
         this._onCancelSearch=(evt)=>this._cancelSearch(evt);
     }
@@ -65,21 +68,29 @@ export default class ArthaContainer extends BaseComponent{
         // Input de búsqueda
         if(this.searcher){
             this.searcher_input=DOMHelper.createElement('input-search');
+            this.searcher_input.addEventListener('component-ready',()=>{
+                this.searcher_input.searchMode(this.search_mode);
+            });
             this.appendChild(this.searcher_input);
+            this.searcher_input.addEventListener('refresh',this._onRefresh);
             this.searcher_input.addEventListener('search',this._onSearch);
             this.searcher_input.addEventListener('cancel-search',this._onCancelSearch);
+            this.addEventListener('search_mode-changed',(evt)=>{
+                //this.searcher_input.searchMode(evt.detail.value);
+            });
         }
 
         // Contenido
         this.content=this.querySelector(':scope > dynamic-content') || this.appendChild(document.createElement('dynamic-content'));
         this._content=this.content.children[0];
-
         if(this.hasAction()){
             if(this.searcher){
                 this.refresh(this.searcher_input.value);
             }else{
                 this.refresh();
             }
+        }else if(this.search_mode==InputSearch.SEARCH_MODES.local){
+            this.refresh(this.searcher_input.value);
         }
 
         const channels=(this.getAttribute('refresh-on')||'').split(',').map(c=>c.trim()).filter(c=>c.length>0);
@@ -107,9 +118,16 @@ export default class ArthaContainer extends BaseComponent{
         return DOMHelper.createElement('artha-loader');
     }
 
+    _handleRefresh(evt){
+        if(this.hasAttribute('action')){
+            this.search=evt.detail.query;
+            this.refresh();
+        }
+    }
+
     _handleSearch(evt){
         this.page=1;
-        if(this.action){
+        if(this.hasAction()){
             this.search=evt.detail.query;
             return this.refresh();
         }else{
@@ -206,7 +224,7 @@ export default class ArthaContainer extends BaseComponent{
     }
 
     hasAction(){
-        return this.hasAttribute('action');
+        return this.hasAttribute('action') && this.search_mode==InputSearch.SEARCH_MODES.server;
     }
 
     hasPagination(){

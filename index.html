@@ -25,11 +25,14 @@
     </script>
 </head>
 <body>
-    <artha-select multiple action="http://localhost:8000/api/organisms">
-        <option value="1">Opción 1</option>
-        <option value="2">Opción 2</option>
-        <option value="3">Opción 3</option>
-    </artha-select>
+    <artha-collapsible>
+        <div class="item-header">
+            <span class="item-title">Prueba</span>
+        </div>
+        <div class="item-content">
+            <h2>Hola que tal</h2>
+        </div>
+    </artha-collapsible>
     <!--
     <artha-form
         action="https://api.mockfly.dev/mocks/b5a1a715-2d30-4f60-97ec-7114638083d9/user"
@@ -39,12 +42,12 @@
         <input type="submit" value="Enviar">
     </artha-form>
 
-    <button id="refresh">Recargar</button>
+    -->
     <artha-container
         action="https://api.mockfly.dev/mocks/b5a1a715-2d30-4f60-97ec-7114638083d9/users"
         template="item-template"
         searcher
-        pagination>
+        search-mode="local">
     </artha-container>
     <template id="item-template">
         <div>
@@ -54,6 +57,5 @@
             <hr>
         </div>
     </template>
-    -->
 </body>
 </html>

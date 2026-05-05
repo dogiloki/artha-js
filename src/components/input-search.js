@@ -5,11 +5,14 @@ export default class InputSearch extends BaseComponent{
 
     static defaults={
         delay:300,
-        text:'Búscar',
-        icon:'../dist/assets/icons/search.svg'
+        text:'Búscar'
     }
+    static SEARCH_MODES=Object.freeze({
+        local:'local',
+        server:'server'
+    });
 
-    constructor(){
+    constructor(mode_search=null){
         super([
             'delay','text','value','input','button'
         ],{
@@ -29,7 +32,7 @@ export default class InputSearch extends BaseComponent{
                 text:InputSearch.defaults.text
             },
             reflect:{
-                text:false
+                text:false,
             }
         });
         this._search_timer=null;
@@ -49,6 +52,7 @@ export default class InputSearch extends BaseComponent{
             this._cancelQueuedSearch();
             this.search();
         });
+        this.searchMode(InputSearch.SEARCH_MODES.server);
     }
 
     onConnected(){
@@ -69,8 +73,41 @@ export default class InputSearch extends BaseComponent{
         this._initialized=false;
     }
 
+    onAttributeChanged(prop,old_value,new_value){
+        if(prop=='search_mode'){
+            console.log(new_value);
+        }
+    }
+
+    searchMode(value){
+        this._search_mode=value;
+        this.button?.removeEventListener('click',this._onClick);
+        if(this._search_mode==InputSearch.SEARCH_MODES.local){
+            this._onClick=(evt=>{
+                evt.preventDefault();
+                this.refresh();
+            });
+            this.button?.classList.remove(...this.button?.classList);
+            this.button?.classList.add("button-refresh");
+            const span=this.button?.querySelector("span");
+            span?.classList.remove(...span?.classList);
+            span?.classList.add("icon","refresh");
+        }else if(this._search_mode==InputSearch.SEARCH_MODES.server){
+            this._onClick=(evt=>{
+                evt.preventDefault();
+                this._cancelQueuedSearch();
+                this.search();
+            });
+            this.button?.classList.remove(...this.button?.classList);
+            this.button?.classList.add("button-search");
+            const span=this.button?.querySelector("span");
+            span?.classList.remove(...span?.classList);
+            span?.classList.add("icon","search");
+        }
+        this.button?.addEventListener('click',this._onClick);
+    }
+
     _ensureStructure(){
-        this.icon=InputSearch.defaults.icon;
         this.style.display="flex";
         this.input=this.appendChild(DOMHelper.createElement('input',(input)=>{
             input.classList.add('input-field');
@@ -114,6 +151,15 @@ export default class InputSearch extends BaseComponent{
 
     search(){
         this.dispatchEvent(new CustomEvent('search',{
+            detail:{
+                query:this.value
+            },
+            bubbles:true
+        }));
+    }
+
+    refresh(){
+        this.dispatchEvent(new CustomEvent('refresh',{
             detail:{
                 query:this.value
             },

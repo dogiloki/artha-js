@@ -553,7 +553,7 @@ var BaseComponent = class _BaseComponent extends HTMLElement {
     this._setupProperties();
   }
   _isReflected(prop) {
-    return this._special_props.reflect[prop] !== false;
+    return !this._special_props.reflect[prop];
   }
   _getAttribute(attr) {
     return this.getAttribute(this._valueToAttr(attr));
@@ -618,7 +618,7 @@ var BaseComponent = class _BaseComponent extends HTMLElement {
   }
   _setPropertyValue(prop, value) {
     if (this._updating) return;
-    if (this._isReflected(prop) === false) {
+    if (!this._isReflected(prop)) {
       this._memory[prop] = value;
       this._triggerUpdate(prop, value);
       return;
@@ -1199,6 +1199,166 @@ var ArthaLoader = class _ArthaLoader extends BaseComponent {
   }
 };
 
+// src/components/input-search.js
+var InputSearch = class _InputSearch extends BaseComponent {
+  static defaults = {
+    delay: 300,
+    text: "B\xFAscar"
+  };
+  static SEARCH_MODES = Object.freeze({
+    local: "local",
+    server: "server"
+  });
+  constructor(mode_search = null) {
+    super([
+      "delay",
+      "text",
+      "value",
+      "input",
+      "button"
+    ], {
+      element_refs: ["input", "button"],
+      resolvers: {
+        "value": {
+          set: (raw) => {
+            return this.input.value = raw;
+          },
+          get: (raw) => {
+            return this.input?.value ?? null;
+          }
+        }
+      },
+      defaults: {
+        delay: _InputSearch.defaults.delay,
+        text: _InputSearch.defaults.text
+      },
+      reflect: {
+        text: false
+      }
+    });
+    this._search_timer = null;
+    this._initialized = false;
+    this._onInput = ((evt) => {
+      this._queueSearch();
+    });
+    this._onKeyDown = ((evt) => {
+      if (evt.key === "Enter") {
+        evt.preventDefault();
+        this._cancelQueuedSearch();
+        this.search();
+      }
+    });
+    this._onClick = ((evt) => {
+      evt.preventDefault();
+      this._cancelQueuedSearch();
+      this.search();
+    });
+    this.searchMode(_InputSearch.SEARCH_MODES.server);
+  }
+  onConnected() {
+    if (this._initialized) return;
+    this._ensureStructure();
+    this._bindEvents();
+    this._initialized = true;
+  }
+  onDisconnected() {
+    this.input?.removeEventListener("input", this._onInput);
+    this.input?.removeEventListener("keydown", this._onKeyDown);
+    this.button?.removeEventListener("click", this._onClick);
+    if (this._search_timer) {
+      clearTimeout(this._search_timer);
+      this._search_timer = null;
+    }
+    this._initialized = false;
+  }
+  onAttributeChanged(prop, old_value, new_value) {
+    if (prop == "search_mode") {
+      console.log(new_value);
+    }
+  }
+  searchMode(value) {
+    this._search_mode = value;
+    this.button?.removeEventListener("click", this._onClick);
+    if (this._search_mode == _InputSearch.SEARCH_MODES.local) {
+      this._onClick = ((evt) => {
+        evt.preventDefault();
+        this.refresh();
+      });
+      this.button?.classList.remove(...this.button?.classList);
+      this.button?.classList.add("button-refresh");
+      const span = this.button?.querySelector("span");
+      span?.classList.remove(...span?.classList);
+      span?.classList.add("icon", "refresh");
+    } else if (this._search_mode == _InputSearch.SEARCH_MODES.server) {
+      this._onClick = ((evt) => {
+        evt.preventDefault();
+        this._cancelQueuedSearch();
+        this.search();
+      });
+      this.button?.classList.remove(...this.button?.classList);
+      this.button?.classList.add("button-search");
+      const span = this.button?.querySelector("span");
+      span?.classList.remove(...span?.classList);
+      span?.classList.add("icon", "search");
+    }
+    this.button?.addEventListener("click", this._onClick);
+  }
+  _ensureStructure() {
+    this.style.display = "flex";
+    this.input = this.appendChild(DOMHelper.createElement("input", (input) => {
+      input.classList.add("input-field");
+      input.type = "search";
+      input.placeholder = this.text;
+    }));
+    this.button = this.appendChild(DOMHelper.createElement("button", (button) => {
+      button.classList.add("button-search");
+      button.appendChild(DOMHelper.createElement("span", (span) => {
+        span.classList.add("icon", "search");
+      }));
+    }));
+  }
+  _bindEvents() {
+    this.input.addEventListener("input", this._onInput);
+    this.input.addEventListener("keydown", this._onKeyDown);
+    this.button.addEventListener("click", this._onClick);
+  }
+  _queueSearch() {
+    this._cancelQueuedSearch();
+    this._search_timer = setTimeout(() => {
+      this.search();
+      this._search_timer = null;
+    }, Number(this.delay));
+  }
+  _cancelQueuedSearch() {
+    this.dispatchEvent(new CustomEvent("cancel-search", {
+      detail: {
+        query: this.value
+      },
+      bubbles: true
+    }));
+    if (this._search_timer) {
+      clearTimeout(this._search_timer);
+      this._search_timer = null;
+    }
+  }
+  search() {
+    this.dispatchEvent(new CustomEvent("search", {
+      detail: {
+        query: this.value
+      },
+      bubbles: true
+    }));
+  }
+  refresh() {
+    this.dispatchEvent(new CustomEvent("refresh", {
+      detail: {
+        query: this.value
+      },
+      bubbles: true
+    }));
+  }
+};
+
 // src/components/artha-container.js
 var ArthaContainer = class _ArthaContainer extends BaseComponent {
   static formAssociated = true;
@@ -1218,6 +1378,7 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
         "page",
         "search",
         "name",
+        "search_mode",
         "pagination",
         "message",
         "searcher",
@@ -1230,7 +1391,8 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
         element_refs: ["template", "message"],
         defaults: {
           response_type: _ArthaContainer.defaults.response_type,
-          method: _ArthaContainer.defaults.method
+          method: _ArthaContainer.defaults.method,
+          search_mode: InputSearch.SEARCH_MODES.server
         },
         reflect: {
           search: false,
@@ -1246,9 +1408,10 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
     };
     this.task_queue = TaskQueue.singleton();
     this._current_xhr = null;
-    this.items = {};
+    this.items = [];
     this.selection_store = new SelectionStore();
     this._initialized = false;
+    this._onRefresh = (evt) => this._handleRefresh(evt);
     this._onSearch = (evt) => this._handleSearch(evt);
     this._onCancelSearch = (evt) => this._cancelSearch(evt);
   }
@@ -1266,9 +1429,15 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
     this.loader_container = this._createLoader();
     if (this.searcher) {
       this.searcher_input = DOMHelper.createElement("input-search");
+      this.searcher_input.addEventListener("component-ready", () => {
+        this.searcher_input.searchMode(this.search_mode);
+      });
       this.appendChild(this.searcher_input);
+      this.searcher_input.addEventListener("refresh", this._onRefresh);
       this.searcher_input.addEventListener("search", this._onSearch);
       this.searcher_input.addEventListener("cancel-search", this._onCancelSearch);
+      this.addEventListener("search_mode-changed", (evt) => {
+      });
     }
     this.content = this.querySelector(":scope > dynamic-content") || this.appendChild(document.createElement("dynamic-content"));
     this._content = this.content.children[0];
@@ -1278,6 +1447,8 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
       } else {
         this.refresh();
       }
+    } else if (this.search_mode == InputSearch.SEARCH_MODES.local) {
+      this.refresh(this.searcher_input.value);
     }
     const channels = (this.getAttribute("refresh-on") || "").split(",").map((c) => c.trim()).filter((c) => c.length > 0);
     this._refresh_listeners = [];
@@ -1300,9 +1471,15 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
   _createLoader() {
     return DOMHelper.createElement("artha-loader");
   }
+  _handleRefresh(evt) {
+    if (this.hasAttribute("action")) {
+      this.search = evt.detail.query;
+      this.refresh();
+    }
+  }
   _handleSearch(evt) {
     this.page = 1;
-    if (this.action) {
+    if (this.hasAction()) {
       this.search = evt.detail.query;
       return this.refresh();
     } else {
@@ -1391,7 +1568,7 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
     });
   }
   hasAction() {
-    return this.hasAttribute("action");
+    return this.hasAttribute("action") && this.search_mode == InputSearch.SEARCH_MODES.server;
   }
   hasPagination() {
     return this.hasAttribute("pagination");
@@ -2181,120 +2358,28 @@ var ArthaSelect = class _ArthaSelect extends BaseComponent {
   }
 };
 
-// src/components/input-search.js
-var InputSearch = class _InputSearch extends BaseComponent {
-  static defaults = {
-    delay: 300,
-    text: "B\xFAscar",
-    icon: "../dist/assets/icons/search.svg"
-  };
+// src/components/artha-collapsible.js
+var ArthaCollapsible = class extends BaseComponent {
   constructor() {
-    super([
-      "delay",
-      "text",
-      "value",
-      "input",
-      "button"
-    ], {
-      element_refs: ["input", "button"],
-      resolvers: {
-        "value": {
-          set: (raw) => {
-            return this.input.value = raw;
-          },
-          get: (raw) => {
-            return this.input?.value ?? null;
-          }
-        }
-      },
-      defaults: {
-        delay: _InputSearch.defaults.delay,
-        text: _InputSearch.defaults.text
-      },
-      reflect: {
-        text: false
-      }
+    super();
+    this.header = this.firstElementChild;
+    this.header_icon = DOMHelper.createElement("span", (span) => {
+      span.innerHTML = "\u25B6";
     });
-    this._search_timer = null;
-    this._initialized = false;
-    this._onInput = ((evt) => {
-      this._queueSearch();
-    });
-    this._onKeyDown = ((evt) => {
-      if (evt.key === "Enter") {
-        evt.preventDefault();
-        this._cancelQueuedSearch();
-        this.search();
-      }
-    });
-    this._onClick = ((evt) => {
-      evt.preventDefault();
-      this._cancelQueuedSearch();
-      this.search();
-    });
-  }
-  onConnected() {
-    if (this._initialized) return;
-    this._ensureStructure();
+    this.content = this.children[1];
+    this.header.appendChild(this.header_icon);
+    this.toggle(false);
     this._bindEvents();
-    this._initialized = true;
-  }
-  onDisconnected() {
-    this.input?.removeEventListener("input", this._onInput);
-    this.input?.removeEventListener("keydown", this._onKeyDown);
-    this.button?.removeEventListener("click", this._onClick);
-    if (this._search_timer) {
-      clearTimeout(this._search_timer);
-      this._search_timer = null;
-    }
-    this._initialized = false;
-  }
-  _ensureStructure() {
-    this.icon = _InputSearch.defaults.icon;
-    this.style.display = "flex";
-    this.input = this.appendChild(DOMHelper.createElement("input", (input) => {
-      input.classList.add("input-field");
-      input.type = "search";
-      input.placeholder = this.text;
-    }));
-    this.button = this.appendChild(DOMHelper.createElement("button", (button) => {
-      button.classList.add("button-search");
-      button.appendChild(DOMHelper.createElement("span", (span) => {
-        span.classList.add("icon", "search");
-      }));
-    }));
   }
   _bindEvents() {
-    this.input.addEventListener("input", this._onInput);
-    this.input.addEventListener("keydown", this._onKeyDown);
-    this.button.addEventListener("click", this._onClick);
+    this.header.addEventListener("click", (evt) => {
+      this.toggle();
+    });
   }
-  _queueSearch() {
-    this._cancelQueuedSearch();
-    this._search_timer = setTimeout(() => {
-      this.search();
-      this._search_timer = null;
-    }, Number(this.delay));
-  }
-  _cancelQueuedSearch() {
-    this.dispatchEvent(new CustomEvent("cancel-search", {
-      detail: {
-        query: this.value
-      },
-      bubbles: true
-    }));
-    if (this._search_timer) {
-      clearTimeout(this._search_timer);
-      this._search_timer = null;
-    }
-  }
-  search() {
-    this.dispatchEvent(new CustomEvent("search", {
-      detail: {
-        query: this.value
-      },
-      bubbles: true
-    }));
+  toggle(is_open = null) {
+    is_open ??= this.classList.toggle("open");
+    this.header_icon.innerHTML = is_open ? "\u25BC" : "\u25B6";
+    this.content.style.maxHeight = (is_open ? this.content.scrollHeight : "0") + "px";
   }
 };
 
@@ -2326,8 +2411,12 @@ function registerComponents() {
   if (!customElements.get("artha-select")) {
     customElements.define("artha-select", ArthaSelect);
   }
+  if (!customElements.get("artha-collapsible")) {
+    customElements.define("artha-collapsible", ArthaCollapsible);
+  }
 }
 export {
+  ArthaCollapsible,
   ArthaContainer,
   ArthaField,
   ArthaForm,

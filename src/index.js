@@ -19,6 +19,7 @@ import ArthaContainer from './components/artha-container.js';
 import ArthaForm from './components/artha-form.js';
 import ArthaField from './components/artha-field.js';
 import ArthaSelect from './components/artha-select.js';
+import ArthaCollapsible from './components/artha-collapsible.js';
 import InputSearch from './components/input-search.js';
 
 export {
@@ -38,6 +39,7 @@ export {
     ArthaForm,
     ArthaField,
     ArthaSelect,
+    ArthaCollapsible,
     InputSearch
 };
 
@@ -68,5 +70,8 @@ function registerComponents(){
     }
     if(!customElements.get('artha-select')){
         customElements.define('artha-select',ArthaSelect);
+    }
+    if(!customElements.get('artha-collapsible')){
+        customElements.define('artha-collapsible',ArthaCollapsible);
     }
 }

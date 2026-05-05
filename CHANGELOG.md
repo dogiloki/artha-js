@@ -1,5 +1,22 @@
 # Changelog
 
+## 4.1.0
+
+### Added
+- Nuevo componente 'artha-collapsible' para mostrar y ocutar contenido expandible
+- Nuevo estilos predetermiandos para 'artha-collapsible'
+- Nuevo attributo en 'artha-container' para indicar busqueda local o servidor, si es local al momento de buscar algo no hace peticon al servidor solo cuando da al boton refrescar y si es servidor siempre consulta al servidor cuando se realzia una busqueda al agregar el atributo searcher en 'artha-container'
+
+### Changed
+- 'artha-container' agrega soporte para search-mode con modos server y local.
+- 'input-search' ahora puede cambiar dinámicamente entre comportamiento de búsqueda y refresco.
+- El paquete exporta y registra automáticamente 'artha-collapsible'.
+
+### Fidex
+- Se corrigió la importación de DOMHelper en SPA agregando la extensión .js.
+- Se corrigió el manejo de propiedades no reflejadas en BaseComponent.
+- Se corrigió la inicialización de items en artha-container para usar un arreglo.
+
 ## 4.0.0
 
 ### Changed

@@ -74,7 +74,7 @@ export default class BaseComponent extends HTMLElement{
     }
 
     _isReflected(prop){
-        return this._special_props.reflect[prop]!==false;
+        return !this._special_props.reflect[prop];
     }
 
     _getAttribute(attr){
@@ -155,7 +155,7 @@ export default class BaseComponent extends HTMLElement{
     _setPropertyValue(prop,value){
         if(this._updating) return;
         // Propiedades que son se refleja como atributos
-        if(this._isReflected(prop)===false){
+        if(!this._isReflected(prop)){
             this._memory[prop]=value;
             this._triggerUpdate(prop,value);
             return;

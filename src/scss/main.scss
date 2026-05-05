@@ -3,6 +3,7 @@
 @use './loader.scss' as *;
 @use './field.scss' as *;
 @use './select.scss' as *;
+@use './collapsible.scss' as *;
 
 .hidden{
     display: none !important;

@@ -1,4 +1,4 @@
-import DOMHelper from "../helpers/DOMHelper";
+import DOMHelper from "../helpers/DOMHelper.js";
 
 export default class SPA{
 

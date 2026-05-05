@@ -7,7 +7,7 @@ Artha JS esta pensada para:
 - enviar formularios por XHR
 - renderizar listas y bloques desde respuestas JSON
 - mostrar loaders y mensajes de estado
-- buscar con debounce sobre contenedores remotos
+- buscar con debounce sobre contenedores remotos o locales
 - coordinar eventos globales entre componentes
 - integrarse facil con Laravel y Vite
 
@@ -45,6 +45,7 @@ La libreria exporta:
 - `ArthaForm`
 - `ArthaField`
 - `ArthaSelect`
+- `ArthaCollapsible`
 - `InputSearch`
 
 Al importar el paquete principal se registran automaticamente estos custom elements:
@@ -56,6 +57,7 @@ Al importar el paquete principal se registran automaticamente estos custom eleme
 - `input-search`
 - `artha-field`
 - `artha-select`
+- `artha-collapsible`
 
 ## Instalacion
 
@@ -88,7 +90,7 @@ Desde tu archivo CSS o SCSS:
 Tambien puedes importar modulos puntuales:
 
 ```js
-import { EventBus, XHR, ArthaSelect } from "@dogiloki/artha-js";
+import { EventBus, XHR, ArthaSelect, ArthaCollapsible } from "@dogiloki/artha-js";
 ```
 
 ## Uso con Laravel
@@ -134,21 +136,20 @@ Y en tu Blade:
   <link rel="stylesheet" href="./dist/artha.min.css">
 </head>
 <body>
-  <artha-form
-    id="user-form"
-    action="/api/user"
-    method="POST">
-    <input type="text" name="name" placeholder="Nombre">
-    <input type="email" name="email" placeholder="Correo">
-    <button type="submit">Guardar</button>
-  </artha-form>
+  <artha-collapsible>
+    <div class="item-header">
+      <span class="item-title">Mas informacion</span>
+    </div>
+    <div class="item-content">
+      <p>Contenido expandible</p>
+    </div>
+  </artha-collapsible>
 
   <artha-container
-    id="users"
     action="/api/users"
     template="user-template"
     searcher
-    pagination="10">
+    search-mode="server">
   </artha-container>
 
   <template id="user-template">
@@ -186,6 +187,7 @@ import {
   ArthaForm,
   ArthaField,
   ArthaSelect,
+  ArthaCollapsible,
   InputSearch
 } from "@dogiloki/artha-js";
 ```
@@ -295,7 +297,7 @@ Si ademas defines `refresh-on`, el select se recargara cuando ese evento global 
 
 ### `artha-container`
 
-Componente para cargar, renderizar y refrescar datos remotos.
+Componente para cargar, renderizar y refrescar datos remotos o filtrar contenido local.
 
 Casos de uso:
 
@@ -316,6 +318,7 @@ Atributos utiles:
 - `name`
 - `page`
 - `search`
+- `search-mode`
 - `response-type`
 - `template`
 - `pagination`
@@ -355,6 +358,34 @@ Eventos emitidos:
 - `item-deselected`
 - `message-rendered`
 - `component-ready`
+
+#### Modos de busqueda
+
+`artha-container` puede trabajar en dos modos:
+
+- `server`: usa `action` y hace peticiones remotas
+- `local`: filtra los items ya renderizados en memoria
+
+Ejemplo remoto:
+
+```html
+<artha-container
+  action="/api/users"
+  template="user-template"
+  searcher
+  search-mode="server">
+</artha-container>
+```
+
+Ejemplo local:
+
+```html
+<artha-container
+  template="user-template"
+  searcher
+  search-mode="local">
+</artha-container>
+```
 
 #### `data-wire`
 
@@ -493,6 +524,34 @@ Ejemplo:
 </artha-field>
 ```
 
+### `artha-collapsible`
+
+Componente para mostrar y ocultar contenido expandible.
+
+Funcionamiento:
+
+- toma el primer hijo como cabecera
+- toma el segundo hijo como contenido
+- agrega un indicador visual de apertura
+- alterna entre abierto y cerrado al hacer click en la cabecera
+
+API publica:
+
+- `toggle(isOpen = null)`
+
+Ejemplo:
+
+```html
+<artha-collapsible>
+  <div class="item-header">
+    <span class="item-title">Mas informacion</span>
+  </div>
+  <div class="item-content">
+    <p>Contenido expandible</p>
+  </div>
+</artha-collapsible>
+```
+
 ### `input-search`
 
 Componente de busqueda con debounce pensado para integrarse con `artha-container`.
@@ -505,11 +564,14 @@ Atributos:
 API publica:
 
 - `search()`
+- `refresh()`
+- `searchMode(mode)`
 
 Eventos emitidos:
 
 - `search`
 - `cancel-search`
+- `refresh`
 
 ## Core
 
@@ -688,6 +750,7 @@ Eventos de componentes:
 - `message-rendered`
 - `search`
 - `cancel-search`
+- `refresh`
 - `select`
 - `deselect`
 - `change`
@@ -761,7 +824,9 @@ npm run build:debug
 Esto genera:
 
 - `dist/artha.css`
+- `dist/artha.css.map`
 - `dist/artha.js`
+- `dist/artha.js.map`
 
 ## Licencia
 
