@@ -11,6 +11,9 @@
 - 'artha-container' agrega soporte para search-mode con modos server y local.
 - 'input-search' ahora puede cambiar dinámicamente entre comportamiento de búsqueda y refresco.
 - El paquete exporta y registra automáticamente 'artha-collapsible'.
+- En la clase EventBus se definio como null el atributo data el método emit()
+- En el componente 'artha-container' se arego parámetro para indicar si en renderItem() se agrega al inicio el elemento a agregar, por defecto se agrega al final.
+- En el componente 'artha-form' se cambio el orden al llamar al método fillFromJson() posicionado antes de invocar el evento 'resolve'.
 
 ### Fidex
 - Se corrigió la importación de DOMHelper en SPA agregando la extensión .js.

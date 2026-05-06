@@ -271,7 +271,7 @@ export default class ArthaContainer extends BaseComponent{
     refreshWithData(data){
         if(!data) return;
         for(const child of this.content.querySelectorAll('[data-id]')){
-            if(child.dataset.id==data.id) this.renderItem(data,true,child);
+            if(child.dataset.id==data.id) this.renderItem(data,true,child,true);
         }
     }
 
@@ -286,7 +286,7 @@ export default class ArthaContainer extends BaseComponent{
         this.dispatchEvent(new CustomEvent('dynamic-content-loaded',{detail:results}));
     }
 
-    renderItem(data,refresh_children=true,update=null){
+    renderItem(data,refresh_children=true,update=null,prepend=false){
         if(!data) return;
         const template=this.template?(this.template.tagName==='TEMPLATE'?this.template.content.cloneNode(true):this.template.cloneNode(true)):this;
         const element=update?update:(this.template?template.children[0]:this);
@@ -333,7 +333,13 @@ export default class ArthaContainer extends BaseComponent{
         }
 
         this.onRenderItem(element,data);
-        if(this.template && !update) this.content.appendChild(element);
+        if(this.template && !update){
+            if(prepend){
+                this.content.prepend(element);
+            }else{
+                this.content.appendChild(element)
+            }
+        }
         this.dispatchEvent(new CustomEvent('item-rendered',{detail:{item:element,data,index}}));
         index++;
     }

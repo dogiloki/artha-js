@@ -208,8 +208,8 @@ export default class ArthaForm extends BaseComponent{
                 onData:(xhr,json)=>{
                     // Respuesta procesada en formato json
                     task.resolve(xhr,()=>{
-                        this.dispatchEvent(new CustomEvent('resolve',{detail:json}));
                         this.fillFromJson(json.data??{},false);
+                        this.dispatchEvent(new CustomEvent('resolve',{detail:json}));
                     });
                 },
                 onError:(err)=>{

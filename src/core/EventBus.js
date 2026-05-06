@@ -7,7 +7,7 @@ export default class EventBus{
     static any_listeners=new Set();
     
     // Emitir evento
-    static emit(name,data){
+    static emit(name,data=null){
         if(this.debug){
             try{
                 console.log(`[EventBus] emit -> ${name}`,structuredClone(data));
@@ -26,7 +26,7 @@ export default class EventBus{
     }
 
     // Emitir y esperar promesa (async listeners)
-    static emitAsync(name,data){
+    static emitAsync(name,data=null){
         this.any_listeners.forEach(cb=>{
             try{
                 cb(name,data);

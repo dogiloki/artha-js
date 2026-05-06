@@ -377,7 +377,7 @@ var EventBus = class {
   static listeners = /* @__PURE__ */ new Map();
   static any_listeners = /* @__PURE__ */ new Set();
   // Emitir evento
-  static emit(name, data) {
+  static emit(name, data = null) {
     if (this.debug) {
       try {
         console.log(`[EventBus] emit -> ${name}`, structuredClone(data));
@@ -395,7 +395,7 @@ var EventBus = class {
     EVENT_BUS.dispatchEvent(new CustomEvent(name, { detail: data }));
   }
   // Emitir y esperar promesa (async listeners)
-  static emitAsync(name, data) {
+  static emitAsync(name, data = null) {
     this.any_listeners.forEach((cb) => {
       try {
         cb(name, data);
@@ -1608,7 +1608,7 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
   refreshWithData(data) {
     if (!data) return;
     for (const child of this.content.querySelectorAll("[data-id]")) {
-      if (child.dataset.id == data.id) this.renderItem(data, true, child);
+      if (child.dataset.id == data.id) this.renderItem(data, true, child, true);
     }
   }
   render(results, refresh = false, refresh_children = true) {
@@ -1621,7 +1621,7 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
     for (const data of results) this.renderItem(data, refresh_children);
     this.dispatchEvent(new CustomEvent("dynamic-content-loaded", { detail: results }));
   }
-  renderItem(data, refresh_children = true, update = null) {
+  renderItem(data, refresh_children = true, update = null, prepend = false) {
     if (!data) return;
     const template = this.template ? this.template.tagName === "TEMPLATE" ? this.template.content.cloneNode(true) : this.template.cloneNode(true) : this;
     const element = update ? update : this.template ? template.children[0] : this;
@@ -1660,7 +1660,13 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
       if (this.selectable) this._bindSelectable(element, data);
     }
     this.onRenderItem(element, data);
-    if (this.template && !update) this.content.appendChild(element);
+    if (this.template && !update) {
+      if (prepend) {
+        this.content.prepend(element);
+      } else {
+        this.content.appendChild(element);
+      }
+    }
     this.dispatchEvent(new CustomEvent("item-rendered", { detail: { item: element, data, index } }));
     index++;
   }
@@ -2020,8 +2026,8 @@ var ArthaForm = class _ArthaForm extends BaseComponent {
         },
         onData: (xhr, json) => {
           task.resolve(xhr, () => {
-            this.dispatchEvent(new CustomEvent("resolve", { detail: json }));
             this.fillFromJson(json.data ?? {}, false);
+            this.dispatchEvent(new CustomEvent("resolve", { detail: json }));
           });
         },
         onError: (err) => {
