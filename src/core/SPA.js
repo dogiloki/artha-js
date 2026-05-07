@@ -28,7 +28,6 @@ export default class SPA{
             Array.from(this.content.querySelectorAll('[key]'))
             .map(el=>[el.getAttribute('key'),el])
         );
-        this._hiddenAll();
     }
 
     _hiddenAll(){
@@ -37,6 +36,7 @@ export default class SPA{
         }
         for(const route of Object.values(this.routes)){
             route.classList.remove('active');
+            route.removeAttribute('selected');
         }
     }
 
@@ -45,8 +45,12 @@ export default class SPA{
             route.addEventListener('click',(evt)=>{
                 this._hiddenAll();
                 route.classList.add('active');
+                route.setAttribute('selected','');
                 DOMHelper.modal(this.contents[route.getAttribute('key')]);
             });
+            if(route.hasAttribute('selected')){
+                route.click();
+            }
         }
     }
 

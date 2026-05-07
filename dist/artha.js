@@ -1067,7 +1067,6 @@ var SPA = class {
     this.contents = Object.fromEntries(
       Array.from(this.content.querySelectorAll("[key]")).map((el) => [el.getAttribute("key"), el])
     );
-    this._hiddenAll();
   }
   _hiddenAll() {
     for (const content of Object.values(this.contents)) {
@@ -1075,6 +1074,7 @@ var SPA = class {
     }
     for (const route of Object.values(this.routes)) {
       route.classList.remove("active");
+      route.removeAttribute("selected");
     }
   }
   _bindEvents() {
@@ -1082,8 +1082,12 @@ var SPA = class {
       route.addEventListener("click", (evt) => {
         this._hiddenAll();
         route.classList.add("active");
+        route.setAttribute("selected", "");
         DOMHelper.modal(this.contents[route.getAttribute("key")]);
       });
+      if (route.hasAttribute("selected")) {
+        route.click();
+      }
     }
   }
 };
