@@ -189,9 +189,9 @@ export default class ArthaForm extends BaseComponent{
         const form_data={};
         this.element_inputs.forEach((element)=>{
             let value=element.type==='checkbox'?(element.checked?1:0):element.value;
-            // Normalizar null
-            if(value==="null" || value===null){
-                value="";
+            // Normalizar null para ser procesado en al back-end
+            if(value==="-1" || value==='' || value==='null'){
+                value=null;
             }
             form_data[element.name]=value;
         });
