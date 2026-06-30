@@ -1948,6 +1948,16 @@ var ArthaForm = class _ArthaForm extends BaseComponent {
       const json = evt.detail;
       if (json.data) {
         element.innerHTML = "";
+        let dflt = element.getAttribute("default");
+        if (dflt == null || dflt == "") {
+          dflt = "-1";
+        }
+        if (dflt) {
+          const option2 = document.createElement("option");
+          option2.value = dflt;
+          option2.textContent = "-- N/A --";
+          element.appendChild(option2);
+        }
         json.data.forEach((item) => {
           const option2 = document.createElement("option");
           option2.value = item.id;
@@ -2013,8 +2023,8 @@ var ArthaForm = class _ArthaForm extends BaseComponent {
     const form_data = {};
     this.element_inputs.forEach((element) => {
       let value = element.type === "checkbox" ? element.checked ? 1 : 0 : element.value;
-      if (value === "null" || value === null) {
-        value = "";
+      if (value === -1 || value === "-1" || value === "" || value === "null") {
+        value = null;
       }
       form_data[element.name] = value;
     });

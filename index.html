@@ -7,6 +7,7 @@
     <script type="module">
         import {XHR,EventBus} from './src/index.js';
 
+        /*
         EventBus.on('artha:before-register',()=>{
             XHR.defaults.transformResponse=(xhr)=>{
                 return {
@@ -16,6 +17,7 @@
                 };
             };
         });
+        */
         /*
         const container=document.querySelector('artha-container');
         document.getElementById('refresh').addEventListener('click',(evt)=>{
@@ -33,6 +35,9 @@
             <h2>Hola que tal</h2>
         </div>
     </artha-collapsible>
+    <artha-form>
+        <select default action="https://api.mockfly.dev/mocks/8b9ad659-4046-4a32-84fa-5f993bf45949/estados" refresh-on="estados"></select>
+    </artha-form>
     <!--
     <artha-form
         action="https://api.mockfly.dev/mocks/b5a1a715-2d30-4f60-97ec-7114638083d9/user"
@@ -43,6 +48,7 @@
     </artha-form>
 
     -->
+    <!--
     <artha-container
         action="https://api.mockfly.dev/mocks/b5a1a715-2d30-4f60-97ec-7114638083d9/users"
         template="item-template"
@@ -57,5 +63,6 @@
             <hr>
         </div>
     </template>
+    -->
 </body>
 </html>
