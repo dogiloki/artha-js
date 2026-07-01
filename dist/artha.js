@@ -1047,16 +1047,19 @@ var TaskQueueItem = class {
 var SPA = class {
   static defaults = {
     menu: null,
-    content: null
+    content: null,
+    default_key: null
   };
   constructor(options) {
     options = { ...this.defaults, ...options };
     const {
       menu,
-      content
+      content,
+      default_key
     } = options;
     this.menu = options.menu;
     this.content = options.content;
+    this.default_key = options.default_key;
     this._init();
     this._bindEvents();
   }
@@ -1080,15 +1083,32 @@ var SPA = class {
   _bindEvents() {
     for (const route of Object.values(this.routes)) {
       route.addEventListener("click", (evt) => {
-        this._hiddenAll();
-        route.classList.add("active");
-        route.setAttribute("selected", "");
-        DOMHelper.modal(this.contents[route.getAttribute("key")]);
+        this.select(route.getAttribute("key"));
       });
-      if (route.hasAttribute("selected")) {
-        route.click();
-      }
     }
+    if (this.default_key) {
+      this.select(this.default_key);
+      return;
+    }
+    const selected = this.menu.querySelector("[selected]");
+    if (selected) {
+      this.select(selected.getAttribute("key"));
+    }
+  }
+  hidden(key) {
+    if (key == null) return;
+    DOMHelper.modal(this.contents[key], false);
+    const route = this.routes[key];
+    route.classList.remove("active");
+    route.removeAttribute("selected");
+  }
+  select(key) {
+    if (!this.routes[key] || !this.contents[key]) return;
+    this._hiddenAll();
+    const route = this.routes[key];
+    route.classList.add("active");
+    route.setAttribute("selected", "");
+    DOMHelper.modal(this.contents[key]);
   }
 };
 
@@ -1949,13 +1969,13 @@ var ArthaForm = class _ArthaForm extends BaseComponent {
       if (json.data) {
         element.innerHTML = "";
         let dflt = element.getAttribute("default");
-        if (dflt == null || dflt == "") {
+        if (dflt == "") {
           dflt = "-1";
         }
         if (dflt) {
           const option2 = document.createElement("option");
           option2.value = dflt;
-          option2.textContent = "-- N/A --";
+          option2.textContent = "-- N / A --";
           element.appendChild(option2);
         }
         json.data.forEach((item) => {
