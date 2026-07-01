@@ -126,7 +126,7 @@ export default class ArthaForm extends BaseComponent{
                 if(dflt){
                     const option=document.createElement('option');
                     option.value=dflt;
-                    option.textContent="-- N / A --";
+                    option.textContent="--- Sin Selección ---";
                     element.appendChild(option);
                 }
                 json.data.forEach((item)=>{

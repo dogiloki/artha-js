@@ -1975,7 +1975,7 @@ var ArthaForm = class _ArthaForm extends BaseComponent {
         if (dflt) {
           const option2 = document.createElement("option");
           option2.value = dflt;
-          option2.textContent = "-- N / A --";
+          option2.textContent = "--- Sin Selecci\xF3n ---";
           element.appendChild(option2);
         }
         json.data.forEach((item) => {
