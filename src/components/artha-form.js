@@ -300,7 +300,15 @@ export default class ArthaForm extends BaseComponent{
         if(reset) this.reset(false);
         for(const key in json){
             const element=this.querySelector(`[name="${key}"]`);
-            if(element) element.value=json[key];
+            if(element){
+                element.value=json[key];
+                element.dispatchEvent(new Event("input",{
+                    bubbles:true
+                }));
+                element.dispatchEvent(new Event("change",{
+                    bubbles:true
+                }));
+            }
         }
     }
 
