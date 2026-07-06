@@ -5,11 +5,14 @@
     <title>Prueba ArthaJS</title>
     <link rel="stylesheet" href="./dist/artha.min.css">
     <script type="module">
-        import {XHR,EventBus,SPA} from './src/index.js';
+        import {XHR,EventBus,SPA,AutoSave} from './src/index.js';
         let spa=new SPA({
             menu:document.getElementById('menu'),
             content:document.getElementById('content')
         });
+
+        const store=new AutoSave();
+        store.bind(document.getElementById('nombre')).load();
 
         /*
         EventBus.on('artha:before-register',()=>{
@@ -49,9 +52,7 @@
         <div key="content-2">Content 2</div>
         <div key="content-3">Content 3</div>
     </div>
-    <artha-form id="formulario" autosave>
-        <input type="text" name="nombre">
-    </artha-form>
+    <input type="text" name="nombre" id="nombre">
     <!--
     <artha-form
         action="https://api.mockfly.dev/mocks/b5a1a715-2d30-4f60-97ec-7114638083d9/user"

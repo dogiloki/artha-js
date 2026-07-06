@@ -11,6 +11,7 @@ import EventBus from './core/EventBus.js';
 import TaskQueue from './core/TaskQueue.js';
 import XHR from './core/XHR.js';
 import SPA from './core/SPA.js';
+import AutoSave from './core/AutoSave.js';
 
 // Core
 import ArthaMessage from './components/artha-message.js';
@@ -33,6 +34,7 @@ export {
     TaskQueue,
     XHR,
     SPA,
+    AutoSave,
     ArthaMessage,
     ArthaLoader,
     ArthaContainer,
