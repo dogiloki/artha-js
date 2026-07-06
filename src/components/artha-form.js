@@ -12,9 +12,9 @@ export default class ArthaForm extends BaseComponent{
 
     constructor(){
         super([
-            'action','method','response_type','disable_submit'
+            'action','method','response_type','disable_submit','autosave'
         ],{
-            booleans:['disable_submit'],
+            booleans:['disable_submit','autosave'],
             defaults:{
                 'response_type':ArthaForm.defaults.response_type
             },
@@ -26,6 +26,8 @@ export default class ArthaForm extends BaseComponent{
         this.message=null;
         this.element_inputs=[];
         this.ignored_input=[];
+        this._autosave_timer=null;
+        this._autosave_delay=300;
         this._initialized=false;
 
         this._onSubmit=(evt)=>{
@@ -37,6 +39,12 @@ export default class ArthaForm extends BaseComponent{
                 evt.preventDefault();
             }
         };
+        this._onAutoSave=(evt)=>{
+            clearTimeout(this._autosave_timer);
+            this._autosave_timer=setTimeout(()=>{
+                this.saveAutosave();
+            },this._autosave_delay);
+        }
     }
 
     onConnected(){
@@ -51,6 +59,13 @@ export default class ArthaForm extends BaseComponent{
         // Cargar inputs iniciales
         this.loadInputs();
 
+        // Auto guardado
+        if(this.autosave){
+            this.restoreAutosave();
+            this.addEventListener('input',this._onAutoSave);
+            this.addEventListener('change',this._onAutoSave);
+        }
+
         // Interceptar submit
         this.addEventListener('submit',this._onSubmit);
         // Tecla enter
@@ -61,6 +76,10 @@ export default class ArthaForm extends BaseComponent{
     }
 
     onDisconnected(){
+        if(this.autosave){
+            this.removeEventListener('input',this._onAutoSave);
+            this.removeEventListener('change',this._onAutoSave);
+        }
         this.removeEventListener('submit',this._onSubmit);
         this.removeEventListener('keydown',this._onKeyDown);
     }
@@ -75,6 +94,44 @@ export default class ArthaForm extends BaseComponent{
         });
         this.querySelector('[type="submit"]')?.addEventListener('click',(evt)=>this.submit());
         this.querySelector('[type="reset"]')?.addEventListener('click',(evt)=>this.reset());
+    }
+
+    autosaveKey(){
+        return `artha-form:${location.pathname}:${this.id}`;
+    }
+
+    saveAutosave(){
+        const json={};
+        this.element_inputs.forEach((element)=>{
+            if(!element.name) return;
+            let value;
+            switch(element.type){
+                case 'checkbox':{
+                    value=element.checked;
+                    break;
+                }
+                case 'radio':{
+                    if(!element.checked) return;
+                    value=element.value;
+                    break;
+                }
+                default:{
+                    value=element.value;
+                }
+            }
+            json[element.name]=value;
+        });
+        localStorage.setItem(this.autosaveKey(),JSON.stringify(json));
+    }
+
+    clearAutosave(){
+        localStorage.removeItem(this.autosaveKey());
+    }
+
+    restoreAutosave(){
+        const json=localStorage.getItem(this.autosaveKey());
+        if(!json) return;
+        this.fillFromJson(JSON.parse(json),false);
     }
 
     // Cargar inputs dinámicos
@@ -170,6 +227,9 @@ export default class ArthaForm extends BaseComponent{
             else element.value='';
         });
         if(reset_message) this.resetMessage();
+        if(this.autosave){
+            this.clearAutosave();
+        }
     }
 
     // Reset al mensaje (ocultar)
@@ -219,6 +279,9 @@ export default class ArthaForm extends BaseComponent{
                     // Respuesta procesada en formato json
                     task.resolve(xhr,()=>{
                         this.fillFromJson(json.data??{},false);
+                        if(this.autosave){
+                            this.clearAutosave();
+                        }
                         this.dispatchEvent(new CustomEvent('resolve',{detail:json}));
                     });
                 },

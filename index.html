@@ -39,9 +39,6 @@
             <h2>Hola que tal</h2>
         </div>
     </artha-collapsible>
-    <artha-form>
-        <select default action="https://api.mockfly.dev/mocks/8b9ad659-4046-4a32-84fa-5f993bf45949/estados" refresh-on="estados"></select>
-    </artha-form>
     <div id="menu">
         <button key="content-1" selected>Mostrar 1</button>
         <button key="content-2">Mostrar 2</button>
@@ -52,6 +49,9 @@
         <div key="content-2">Content 2</div>
         <div key="content-3">Content 3</div>
     </div>
+    <artha-form id="formulario" autosave>
+        <input type="text" name="nombre">
+    </artha-form>
     <!--
     <artha-form
         action="https://api.mockfly.dev/mocks/b5a1a715-2d30-4f60-97ec-7114638083d9/user"
