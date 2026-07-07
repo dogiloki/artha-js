@@ -9,8 +9,8 @@ export default class AutoSave{
         onLoad:null
     };
 
-    constructor(options){
-        options={...this.defaults,...options};
+    constructor(options={}){
+        options={...AutoSave.defaults,...options};
         this.options=options;
         this.map=new Map();
         this.timer=null;

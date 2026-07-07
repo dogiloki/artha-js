@@ -9,7 +9,7 @@ export default class SPA{
     };
 
     constructor(options){
-        options={...this.defaults,...options};
+        options={...SPA.defaults,...options};
         const {
             menu,
             content,

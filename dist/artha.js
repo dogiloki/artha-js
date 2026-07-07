@@ -1044,14 +1044,14 @@ var TaskQueueItem = class {
 };
 
 // src/core/SPA.js
-var SPA = class {
+var SPA = class _SPA {
   static defaults = {
     menu: null,
     content: null,
     default_key: null
   };
   constructor(options) {
-    options = { ...this.defaults, ...options };
+    options = { ..._SPA.defaults, ...options };
     const {
       menu,
       content,
@@ -1113,7 +1113,7 @@ var SPA = class {
 };
 
 // src/core/AutoSave.js
-var AutoSave = class {
+var AutoSave = class _AutoSave {
   static defaults = {
     key: "auto-save",
     debounce: 300,
@@ -1122,8 +1122,8 @@ var AutoSave = class {
     onSave: null,
     onLoad: null
   };
-  constructor(options) {
-    options = { ...this.defaults, ...options };
+  constructor(options = {}) {
+    options = { ..._AutoSave.defaults, ...options };
     this.options = options;
     this.map = /* @__PURE__ */ new Map();
     this.timer = null;
