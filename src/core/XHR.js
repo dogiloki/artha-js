@@ -9,6 +9,7 @@ export default class XHR{
         uri:"",
         headers:{},
         data:{},
+        json:null,
         query:{},
         files:{},
         response_type:"json",
@@ -36,6 +37,7 @@ export default class XHR{
             uri,
             headers,
             data,
+            json,
             query,
             files,
             response_type,
@@ -81,23 +83,28 @@ export default class XHR{
         // Cuerpo
         let body=null;
         if(method!=='GET'){
-            const form_data=new FormData();
-            if(token) form_data.append("_token",token);
-            if(!data['_method']) form_data.append("_method",method);
-            for(let key in data){
-                form_data.append(key,data[key]);
-            }
-            for(let key in files){
-                const value=files[key];
-                if(Array.isArray(value) || value instanceof FileList){
-                    for(let index=0; index<value.length; index++){
-                        form_data.append(`${key}[]`,value[index]);
-                    }
-                }else{
-                    form_data.append(key,value);
+            if(json==null){
+                const form_data=new FormData();
+                if(token) form_data.append("_token",token);
+                if(!data['_method']) form_data.append("_method",method);
+                for(let key in data){
+                    form_data.append(key,data[key]);
                 }
+                for(let key in files){
+                    const value=files[key];
+                    if(Array.isArray(value) || value instanceof FileList){
+                        for(let index=0; index<value.length; index++){
+                            form_data.append(`${key}[]`,value[index]);
+                        }
+                    }else{
+                        form_data.append(key,value);
+                    }
+                }
+                body=form_data;   
+            }else{
+                xhr.setRequestHeader("Content-Type","application/json");
+                body=JSON.stringify(json);
             }
-            body=form_data;
         }
 
         // Carga con datos según la respuesta
