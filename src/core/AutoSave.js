@@ -76,6 +76,13 @@ export default class AutoSave{
         this.options.onLoad?.(data);
     }
 
+    set(key,value){
+        const item=this.map.get(key);
+        item.set(item.el,value);
+        item.el.dispatchEvent(new Event('input',{bubbles:true}));
+        item.el.dispatchEvent(new Event('change',{bubbles:true}));
+    }
+
     clear(){
         localStorage.removeItem(this.options.key);
     }

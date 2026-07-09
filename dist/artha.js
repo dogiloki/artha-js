@@ -1136,6 +1136,7 @@ var AutoSave = class _AutoSave {
       set: options.set || this._defaultSet,
       events: options.events || ["input", "change"]
     });
+    this.restoring = false;
     this._attachListener(key);
     return this;
   }
@@ -1143,7 +1144,10 @@ var AutoSave = class _AutoSave {
     const item = this.map.get(key);
     if (!item) return;
     item.events.forEach((event) => {
-      item.el.addEventListener(event, () => this.save());
+      item.el.addEventListener(event, () => {
+        if (this.restoring) return;
+        this.save();
+      });
     });
   }
   save() {
@@ -1170,11 +1174,21 @@ var AutoSave = class _AutoSave {
       console.warn("Storage corrupto");
       return;
     }
+    this.restoring = true;
     this.map.forEach((item, key) => {
       if (data[key] === void 0) return;
       item.set(item.el, data[key]);
+      item.el.dispatchEvent(new Event("input", { bubbles: true }));
+      item.el.dispatchEvent(new Event("change", { bubbles: true }));
     });
+    this.restoring = false;
     this.options.onLoad?.(data);
+  }
+  set(key, value) {
+    const item = this.map.get(key);
+    item.set(item.el, value);
+    item.el.dispatchEvent(new Event("input", { bubbles: true }));
+    item.el.dispatchEvent(new Event("change", { bubbles: true }));
   }
   clear() {
     localStorage.removeItem(this.options.key);
