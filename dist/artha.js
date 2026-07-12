@@ -4,8 +4,8 @@ function getValueByPath(obj, path, default_value = null) {
 }
 function formDataToArray(form_data) {
   let data = {};
-  form_data.forEach((value, key) => {
-    data[key] = value;
+  form_data.forEach((value, key2) => {
+    data[key2] = value;
   });
   return data;
 }
@@ -14,9 +14,9 @@ function arrayRemove(array, item_remove) {
     return array.filter((item) => item !== item_remove);
   } else if (typeof array === "object") {
     let array_filter = {};
-    for (let key in array) {
-      if (array.hasOwnProperty(key) && array[key] !== item_remove) {
-        array_filter[key] = array[key];
+    for (let key2 in array) {
+      if (array.hasOwnProperty(key2) && array[key2] !== item_remove) {
+        array_filter[key2] = array[key2];
       }
     }
     array = array_filter;
@@ -161,12 +161,12 @@ function jsonViewer(json) {
         element_array2.classList.add("json-array");
       });
       for (let item of json2) {
-        Object.entries(item).forEach(([key, value]) => {
+        Object.entries(item).forEach(([key2, value]) => {
           element_array.appendChild(createElement("div", (element_item) => {
             element_item.classList.add("json-item");
             element_item.appendChild(createElement("div", (item_key) => {
               item_key.classList.add("json-key");
-              item_key.textContent = key;
+              item_key.textContent = key2;
             }));
             if (Array.isArray(value)) {
               element_item.appendChild(addItem(element_array, value));
@@ -690,9 +690,9 @@ var BaseComponent = class _BaseComponent extends HTMLElement {
   }
   setProperties(props) {
     this._updating = true;
-    Object.entries(props).forEach(([key, value]) => {
-      if (this._props.includes(key)) {
-        this[key] = value;
+    Object.entries(props).forEach(([key2, value]) => {
+      if (this._props.includes(key2)) {
+        this[key2] = value;
       }
     });
     this._updating = false;
@@ -774,6 +774,7 @@ var XHR = class _XHR {
     uri: "",
     headers: {},
     data: {},
+    json: null,
     query: {},
     files: {},
     response_type: "json",
@@ -807,6 +808,7 @@ var XHR = class _XHR {
       uri,
       headers,
       data,
+      json,
       query,
       files,
       response_type,
@@ -841,28 +843,33 @@ var XHR = class _XHR {
     if (token) {
       xhr.setRequestHeader("X-CSRF-Token", token);
     }
-    for (let key in headers) {
-      xhr.setRequestHeader(key, headers[key]);
+    for (let key2 in headers) {
+      xhr.setRequestHeader(key2, headers[key2]);
     }
     let body = null;
     if (method !== "GET") {
-      const form_data = new FormData();
-      if (token) form_data.append("_token", token);
-      if (!data["_method"]) form_data.append("_method", method);
-      for (let key in data) {
-        form_data.append(key, data[key]);
-      }
-      for (let key in files) {
-        const value = files[key];
-        if (Array.isArray(value) || value instanceof FileList) {
-          for (let index = 0; index < value.length; index++) {
-            form_data.append(`${key}[]`, value[index]);
-          }
-        } else {
-          form_data.append(key, value);
+      if (json == null) {
+        const form_data = new FormData();
+        if (token) form_data.append("_token", token);
+        if (!data["_method"]) form_data.append("_method", method);
+        for (let key2 in data) {
+          form_data.append(key2, data[key2]);
         }
+        for (let key2 in files) {
+          const value = files[key2];
+          if (Array.isArray(value) || value instanceof FileList) {
+            for (let index = 0; index < value.length; index++) {
+              form_data.append(`${key2}[]`, value[index]);
+            }
+          } else {
+            form_data.append(key2, value);
+          }
+        }
+        body = form_data;
+      } else {
+        xhr.setRequestHeader("Content-Type", "application/json");
+        body = JSON.stringify(json);
       }
-      body = form_data;
     }
     xhr.addEventListener("load", () => {
       onLoad(xhr);
@@ -1095,20 +1102,20 @@ var SPA = class _SPA {
       this.select(selected.getAttribute("key"));
     }
   }
-  hidden(key) {
-    if (key == null) return;
-    DOMHelper.modal(this.contents[key], false);
-    const route = this.routes[key];
+  hidden(key2) {
+    if (key2 == null) return;
+    DOMHelper.modal(this.contents[key2], false);
+    const route = this.routes[key2];
     route.classList.remove("active");
     route.removeAttribute("selected");
   }
-  select(key) {
-    if (!this.routes[key] || !this.contents[key]) return;
+  select(key2) {
+    if (!this.routes[key2] || !this.contents[key2]) return;
     this._hiddenAll();
-    const route = this.routes[key];
+    const route = this.routes[key2];
     route.classList.add("active");
     route.setAttribute("selected", "");
-    DOMHelper.modal(this.contents[key]);
+    DOMHelper.modal(this.contents[key2]);
   }
 };
 
@@ -1119,43 +1126,188 @@ var AutoSave = class _AutoSave {
     debounce: 300,
     serializer: JSON.stringify,
     parser: JSON.parse,
+    server: {},
     onSave: null,
-    onLoad: null
+    onLoad: null,
+    onChange: null,
+    onValidate: null,
+    onEmpty: null,
+    onValid: null,
+    onChanged: null,
+    onStateChange: null,
+    classes: {
+      empty: "input-empty",
+      valid: "input-valid",
+      changed: "input-changed"
+    }
   };
   constructor(options = {}) {
     options = { ..._AutoSave.defaults, ...options };
     this.options = options;
     this.map = /* @__PURE__ */ new Map();
     this.timer = null;
+    this.restoring = false;
   }
   bind(element, options = {}) {
-    const key = options.key ?? element.getAttribute("name");
-    this.map.set(key, {
+    const key2 = options.key ?? element.getAttribute("name");
+    this.map.set(key2, {
       el: element,
       get: options.get || this._defaultGet,
       set: options.set || this._defaultSet,
       events: options.events || ["input", "change"]
     });
-    this.restoring = false;
-    this._attachListener(key);
+    this._attachListener(key2);
+    this.validate(key2);
     return this;
   }
-  _attachListener(key) {
-    const item = this.map.get(key);
+  unbind(key2) {
+    this.map.delete(key2);
+    return this;
+  }
+  getField(key2) {
+    const item = this.map.get(key2);
+    if (!item) return;
+    const value = item.get(item.el);
+    const server = this.options.server[key2];
+    const state = this._validateState(key2, value);
+    return {
+      key: key2,
+      element: item.el,
+      value,
+      server,
+      state,
+      valid: state === "valid",
+      changed: state === "changed",
+      empty: state === "empty"
+    };
+  }
+  getState() {
+    return this.getField(key)?.state ?? null;
+  }
+  isValid(key2) {
+    return this.getState(key2) === "valid";
+  }
+  isChanged(key2) {
+    return this.getState(key2) === "changed";
+  }
+  isEmpty(key2) {
+    return this.getState(key2) === "empty";
+  }
+  getFormState() {
+    return this._getState();
+  }
+  isDirty() {
+    return this.getFormState().dirty;
+  }
+  isClean() {
+    this.getFormState().clean;
+  }
+  _getState() {
+    let empty = 0;
+    let valid = 0;
+    let changed = 0;
+    this.map.forEach((item, key2) => {
+      switch (this._validateState(key2, item)) {
+        case "empty":
+          empty++;
+          break;
+        case "valid":
+          valid++;
+          break;
+        case "changed":
+          changed++;
+          break;
+      }
+    });
+    return {
+      total: this.map.size,
+      empty,
+      valid,
+      changed,
+      dirty: changed > 0,
+      clean: changed === 0
+    };
+  }
+  _notifyState() {
+    this.options.onStateChange?.(this._getState());
+  }
+  _attachListener(key2) {
+    const item = this.map.get(key2);
     if (!item) return;
     item.events.forEach((event) => {
       item.el.addEventListener(event, () => {
         if (this.restoring) return;
+        const value = item.get(item.el);
+        this.options.onChange?.({ key: key2, element: item.el, value });
+        this.validate(key2);
         this.save();
       });
     });
+  }
+  _validateState(key2, item) {
+    const value = item.get(item.el);
+    const server = this.options.server[key2];
+    const server_empty = server === null || server === void 0 || server === "";
+    let state;
+    if (server_empty) {
+      state = value === null || value === void 0 || value === "" ? "empty" : "changed";
+    } else {
+      state = String(value ?? "") === String(server) ? "valid" : "changed";
+    }
+    this._setState(item.el, state);
+    const data = {
+      key: key2,
+      element: item.el,
+      value,
+      server,
+      state
+    };
+    this.options.onValidate?.(data);
+    switch (state) {
+      case "empty":
+        this.options.onEmpty?.(data);
+        break;
+      case "valid":
+        this.options.onValid?.(data);
+        break;
+      case "changed":
+        this.options.onChanged?.(data);
+        break;
+    }
+    return state;
+  }
+  validate(key2 = null) {
+    let result;
+    if (key2) {
+      const item = this.map.get(key2);
+      if (item) {
+        result = this._validateState(key2, item);
+      }
+    } else {
+      result = {};
+      this.map.forEach((item, key3) => {
+        result[key3] = this._validateState(key3, item);
+      });
+    }
+    this._notifyState();
+    return result;
+  }
+  _setState(el, state) {
+    const c = this.options.classes;
+    el.classList.remove(c.empty, c.valid, c.changed);
+    el.classList.add(c[state]);
+  }
+  setServerData(data = {}) {
+    this.options.server = data || {};
+    this.validate();
+    return this;
   }
   save() {
     clearTimeout(this.timer);
     this.timer = setTimeout(() => {
       const data = {};
-      this.map.forEach((item, key) => {
-        data[key] = item.get(item.el);
+      this.map.forEach((item, key2) => {
+        data[key2] = item.get(item.el);
       });
       localStorage.setItem(
         this.options.key,
@@ -1175,23 +1327,36 @@ var AutoSave = class _AutoSave {
       return;
     }
     this.restoring = true;
-    this.map.forEach((item, key) => {
-      if (data[key] === void 0) return;
-      item.set(item.el, data[key]);
+    this.map.forEach((item, key2) => {
+      if (data[key2] === void 0) return;
+      item.set(item.el, data[key2]);
       item.el.dispatchEvent(new Event("input", { bubbles: true }));
       item.el.dispatchEvent(new Event("change", { bubbles: true }));
     });
     this.restoring = false;
+    this.validate();
     this.options.onLoad?.(data);
   }
-  set(key, value) {
-    const item = this.map.get(key);
+  set(key2, value) {
+    const item = this.map.get(key2);
+    if (!item) return;
     item.set(item.el, value);
     item.el.dispatchEvent(new Event("input", { bubbles: true }));
-    item.el.dispatchEvent(new Event("change", { bubbles: true }));
   }
   clear() {
     localStorage.removeItem(this.options.key);
+    this.map.clear();
+    this.validate();
+  }
+  resetToServer() {
+    this.restoring = true;
+    this.map.forEach((item, key2) => {
+      const value = this.options.server[key2];
+      item.set(item.el, value ?? "");
+    });
+    this.restoring = false;
+    this.validate();
+    return this;
   }
   _defaultGet(el) {
     switch (el.type) {
@@ -2242,10 +2407,10 @@ var ArthaForm = class _ArthaForm extends BaseComponent {
   // Llenar inputs desde un JSON
   fillFromJson(json, reset = true) {
     if (reset) this.reset(false);
-    for (const key in json) {
-      const element = this.querySelector(`[name="${key}"]`);
+    for (const key2 in json) {
+      const element = this.querySelector(`[name="${key2}"]`);
       if (element) {
-        element.value = json[key];
+        element.value = json[key2];
         element.dispatchEvent(new Event("input", {
           bubbles: true
         }));

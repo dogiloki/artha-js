@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <title>Prueba ArthaJS</title>
     <link rel="stylesheet" href="./dist/artha.min.css">
+    <style>
+        .input-empty{
+            background-color: red;
+        }
+        .input-valid{
+            background-color: green;
+        }
+        .input-changed{
+            background-color: yellow;;
+        }
+    </style>
     <script type="module">
         import {XHR,EventBus,SPA,AutoSave} from './src/index.js';
         let spa=new SPA({
@@ -11,7 +22,14 @@
             content:document.getElementById('content')
         });
 
-        const store=new AutoSave();
+        const store=new AutoSave({
+            server:{
+                nombre:"Hola"
+            },
+            onStateChange:(state)=>{
+                console.log(state);
+            }
+        });
         store.bind(document.getElementById('nombre')).load();
 
         /*
