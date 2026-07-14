@@ -114,8 +114,8 @@ export default class AutoSave{
         };
     }
 
-    _notifyState(){
-        this.options.onStateChange?.(this._getState());
+    _notifyState(tigger=null){
+        this.options.onStateChange?.(this._getState(),tigger);
     }
 
     _attachListener(key){
@@ -126,7 +126,12 @@ export default class AutoSave{
                 if(this.restoring) return;
                 const value=item.get(item.el);
                 this.options.onChange?.({key,element:item.el,value});
-                this.validate(key);
+                this.validate(key,{
+                    key,
+                    element:item.el,
+                    value,
+                    event
+                });
                 this.save();
             });
         });
@@ -159,7 +164,7 @@ export default class AutoSave{
         return state;
     }
 
-    validate(key=null){
+    validate(key=null,tigger=null){
         let result;
         if(key){
             const item=this.map.get(key);
@@ -172,7 +177,7 @@ export default class AutoSave{
                 result[key]=this._validateState(key,item);
             });
         }
-        this._notifyState();
+        this._notifyState(tigger);
         return result;
     }
 
