@@ -157,9 +157,12 @@ export default class ArthaForm extends BaseComponent{
     }
 
     loadInputsSelect(element,data=null){
-        element.innerHTML="";
         const action=element.getAttribute('action')??null;
-        if(!action) return;
+        if(action){
+            element.innerHTML="";
+        }else{
+            return;
+        }
         const artha_container=document.createElement('artha-container');
         const option=document.createElement('option');
         option.value=-1;
@@ -260,7 +263,7 @@ export default class ArthaForm extends BaseComponent{
         this.element_inputs.forEach((element)=>{
             let value=element.type==='checkbox'?(element.checked?1:0):element.value;
             // Normalizar null para ser procesado en al back-end
-            if(value===-1 || value==="-1" || value==='' || value==='null'){
+            if(value===undefined || value===-1 || value==="-1" || value==='' || value==='null'){
                 value=null;
             }
             form_data[element.name]=value;

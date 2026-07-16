@@ -108,7 +108,12 @@ export default class XHR{
                     if(token) form_data.append("_token",token);
                     if(!data['_method']) form_data.append("_method",method);
                     for(let key in data){
-                        form_data.append(key,data[key]);
+                        let value=data[key];
+                        // No enviar valores nulos como texto "null"
+                        if(value===null || value===undefined){
+                            value="";
+                        }
+                        form_data.append(key,value);
                     }
                     for(let key in files){
                         const value=files[key];
