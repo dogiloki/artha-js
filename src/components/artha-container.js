@@ -19,9 +19,9 @@ export default class ArthaContainer extends BaseComponent{
     constructor(){
         super(
             ["template","action","action_router","method","page","search","name","search_mode",
-            "pagination","message","searcher","selectable","multiple","response_type"],
+            "pagination","message","searcher","selectable","multiple","response_type","manual"],
             {
-                booleans:['searcher','selectable','multiple'],
+                booleans:['searcher','selectable','multiple','manual'],
                 element_refs:['template','message'],
                 defaults:{
                     response_type:ArthaContainer.defaults.response_type,
@@ -83,7 +83,7 @@ export default class ArthaContainer extends BaseComponent{
         // Contenido
         this.content=this.querySelector(':scope > dynamic-content') || this.appendChild(document.createElement('dynamic-content'));
         this._content=this.content.children[0];
-        if(this.hasAction()){
+        if(this.hasAction() && !this.manual){
             if(this.searcher){
                 this.refresh(this.searcher_input.value);
             }else{
