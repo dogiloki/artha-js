@@ -71,7 +71,7 @@ export default class ArthaContainer extends BaseComponent{
             this.searcher_input.addEventListener('component-ready',()=>{
                 this.searcher_input.searchMode(this.search_mode);
             });
-            this.appendChild(this.searcher_input);
+            this.prepend(this.searcher_input);
             this.searcher_input.addEventListener('refresh',this._onRefresh);
             this.searcher_input.addEventListener('search',this._onSearch);
             this.searcher_input.addEventListener('cancel-search',this._onCancelSearch);

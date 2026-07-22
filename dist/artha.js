@@ -800,6 +800,7 @@ var XHR = class _XHR {
     onAction: () => {
     }
   };
+  static queue = /* @__PURE__ */ new Map();
   static request(options) {
     options = { ...this.defaults, ...options };
     const {
@@ -833,74 +834,111 @@ var XHR = class _XHR {
         return xhr2.response;
       }
     };
-    const xhr = new XMLHttpRequest();
-    const query_string = Object.keys(query).length ? "?" + Object.entries(query).filter(([_, v]) => v != null).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&") : "";
-    xhr.open(method, url + uri + query_string, true);
-    xhr.responseType = response_type;
-    xhr.withCredentials = with_credentials;
-    xhr.timeout = timeout;
-    const token = DOMHelper.getMeta("csrf-token") ?? DOMHelper.getMeta("csrf_token") ?? DOMHelper.getMeta("_token");
-    if (token) {
-      xhr.setRequestHeader("X-CSRF-Token", token);
+    const request_key = `GLOBAL_XHR`;
+    if (!_XHR.queue.has(request_key)) {
+      _XHR.queue.set(request_key, {
+        running: false,
+        pending: []
+      });
     }
-    for (let key2 in headers) {
-      xhr.setRequestHeader(key2, headers[key2]);
-    }
-    let body = null;
-    if (method !== "GET") {
-      if (json == null) {
-        const form_data = new FormData();
-        if (token) form_data.append("_token", token);
-        if (!data["_method"]) form_data.append("_method", method);
-        for (let key2 in data) {
-          form_data.append(key2, data[key2]);
-        }
-        for (let key2 in files) {
-          const value = files[key2];
-          if (Array.isArray(value) || value instanceof FileList) {
-            for (let index = 0; index < value.length; index++) {
-              form_data.append(`${key2}[]`, value[index]);
+    const queue = _XHR.queue.get(request_key);
+    const next = () => {
+      if (queue.pending.length) {
+        const send2 = queue.pending.shift();
+        send2();
+      } else {
+        queue.running = false;
+        _XHR.queue.delete(request_key);
+      }
+    };
+    const send = () => {
+      const xhr2 = new XMLHttpRequest();
+      const query_string = Object.keys(query).length ? "?" + Object.entries(query).filter(([_, v]) => v != null).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&") : "";
+      xhr2.open(method, url + uri + query_string, true);
+      xhr2.responseType = response_type;
+      xhr2.withCredentials = with_credentials;
+      xhr2.timeout = timeout;
+      const token = DOMHelper.getMeta("csrf-token") ?? DOMHelper.getMeta("csrf_token") ?? DOMHelper.getMeta("_token");
+      if (token) {
+        xhr2.setRequestHeader("X-CSRF-Token", token);
+      }
+      for (let key2 in headers) {
+        xhr2.setRequestHeader(key2, headers[key2]);
+      }
+      let body = null;
+      if (method !== "GET") {
+        if (json == null) {
+          const form_data = new FormData();
+          if (token) form_data.append("_token", token);
+          if (!data["_method"]) form_data.append("_method", method);
+          for (let key2 in data) {
+            let value = data[key2];
+            if (value === null || value === void 0) {
+              value = "";
             }
-          } else {
             form_data.append(key2, value);
           }
+          for (let key2 in files) {
+            const value = files[key2];
+            if (Array.isArray(value) || value instanceof FileList) {
+              for (let index = 0; index < value.length; index++) {
+                form_data.append(`${key2}[]`, value[index]);
+              }
+            } else {
+              form_data.append(key2, value);
+            }
+          }
+          body = form_data;
+        } else {
+          xhr2.setRequestHeader("Content-Type", "application/json");
+          body = JSON.stringify(json);
         }
-        body = form_data;
-      } else {
-        xhr.setRequestHeader("Content-Type", "application/json");
-        body = JSON.stringify(json);
       }
+      xhr2.addEventListener("load", () => {
+        onLoad(xhr2);
+        onData(xhr2, safeTransform(xhr2));
+        next();
+      });
+      xhr2.addEventListener("error", () => {
+        const retry_options = { ...options };
+        if (retry) {
+          setTimeout(() => {
+            _XHR.request(retry_options);
+          }, retry_delay);
+        }
+        onError(safeTransform(xhr2));
+        next();
+      });
+      xhr2.addEventListener("abort", () => {
+        onAbort(safeTransform(xhr2));
+        next();
+      });
+      xhr2.addEventListener("timeout", () => {
+        const retry_options = { ...options };
+        if (retry) {
+          setTimeout(() => {
+            _XHR.request(retry_options);
+          }, retry_delay);
+        }
+        onTimeout(safeTransform(xhr2));
+        next();
+      });
+      xhr2.addEventListener("progress", (evt) => {
+        onProgress(evt, evt.loaded, evt.total);
+      });
+      onAction(xhr2);
+      xhr2.send(body);
+      return xhr2;
+    };
+    let xhr = null;
+    if (queue.running) {
+      queue.pending.push(() => {
+        xhr = send();
+      });
+    } else {
+      queue.running = true;
+      xhr = send();
     }
-    xhr.addEventListener("load", () => {
-      onLoad(xhr);
-      onData(xhr, safeTransform(xhr));
-    });
-    xhr.addEventListener("error", () => {
-      const retry_options = { ...options };
-      if (retry) {
-        setTimeout(() => {
-          _XHR.request(retry_options);
-        }, retry_delay);
-      }
-      onError(safeTransform(xhr));
-    });
-    xhr.addEventListener("abort", () => {
-      onAbort(safeTransform(xhr));
-    });
-    xhr.addEventListener("timeout", () => {
-      const retry_options = { ...options };
-      if (retry) {
-        setTimeout(() => {
-          _XHR.request(retry_options);
-        }, retry_delay);
-      }
-      onTimeout(safeTransform(xhr));
-    });
-    xhr.addEventListener("progress", (evt) => {
-      onProgress(evt, evt.loaded, evt.total);
-    });
-    onAction(xhr);
-    xhr.send(body);
     return xhr;
   }
 };
@@ -1228,8 +1266,8 @@ var AutoSave = class _AutoSave {
       clean: changed === 0
     };
   }
-  _notifyState() {
-    this.options.onStateChange?.(this._getState());
+  _notifyState(tigger = null) {
+    this.options.onStateChange?.(this._getState(), tigger);
   }
   _attachListener(key2) {
     const item = this.map.get(key2);
@@ -1239,7 +1277,12 @@ var AutoSave = class _AutoSave {
         if (this.restoring) return;
         const value = item.get(item.el);
         this.options.onChange?.({ key: key2, element: item.el, value });
-        this.validate(key2);
+        this.validate(key2, {
+          key: key2,
+          element: item.el,
+          value,
+          event
+        });
         this.save();
       });
     });
@@ -1276,7 +1319,7 @@ var AutoSave = class _AutoSave {
     }
     return state;
   }
-  validate(key2 = null) {
+  validate(key2 = null, tigger = null) {
     let result;
     if (key2) {
       const item = this.map.get(key2);
@@ -1289,7 +1332,7 @@ var AutoSave = class _AutoSave {
         result[key3] = this._validateState(key3, item);
       });
     }
-    this._notifyState();
+    this._notifyState(tigger);
     return result;
   }
   _setState(el, state) {
@@ -1681,10 +1724,11 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
         "searcher",
         "selectable",
         "multiple",
-        "response_type"
+        "response_type",
+        "manual"
       ],
       {
-        booleans: ["searcher", "selectable", "multiple"],
+        booleans: ["searcher", "selectable", "multiple", "manual"],
         element_refs: ["template", "message"],
         defaults: {
           response_type: _ArthaContainer.defaults.response_type,
@@ -1729,7 +1773,7 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
       this.searcher_input.addEventListener("component-ready", () => {
         this.searcher_input.searchMode(this.search_mode);
       });
-      this.appendChild(this.searcher_input);
+      this.prepend(this.searcher_input);
       this.searcher_input.addEventListener("refresh", this._onRefresh);
       this.searcher_input.addEventListener("search", this._onSearch);
       this.searcher_input.addEventListener("cancel-search", this._onCancelSearch);
@@ -1738,7 +1782,7 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
     }
     this.content = this.querySelector(":scope > dynamic-content") || this.appendChild(document.createElement("dynamic-content"));
     this._content = this.content.children[0];
-    if (this.hasAction()) {
+    if (this.hasAction() && !this.manual) {
       if (this.searcher) {
         this.refresh(this.searcher_input.value);
       } else {
@@ -2274,9 +2318,12 @@ var ArthaForm = class _ArthaForm extends BaseComponent {
     });
   }
   loadInputsSelect(element, data = null) {
-    element.innerHTML = "";
     const action = element.getAttribute("action") ?? null;
-    if (!action) return;
+    if (action) {
+      element.innerHTML = "";
+    } else {
+      return;
+    }
     const artha_container = document.createElement("artha-container");
     const option = document.createElement("option");
     option.value = -1;
@@ -2371,7 +2418,7 @@ var ArthaForm = class _ArthaForm extends BaseComponent {
     const form_data = {};
     this.element_inputs.forEach((element) => {
       let value = element.type === "checkbox" ? element.checked ? 1 : 0 : element.value;
-      if (value === -1 || value === "-1" || value === "" || value === "null") {
+      if (value === void 0 || value === -1 || value === "-1" || value === "" || value === "null") {
         value = null;
       }
       form_data[element.name] = value;
