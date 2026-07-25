@@ -24,11 +24,11 @@ export default class SPA{
 
     _init(){
         this.routes=Object.fromEntries(
-            Array.from(this.menu.querySelectorAll('[key]'))
+            Array.from(this.menu.querySelectorAll(':scope > [key]'))
             .map(el=>[el.getAttribute('key'),el])
         );
         this.contents=Object.fromEntries(
-            Array.from(this.content.querySelectorAll('[key]'))
+            Array.from(this.content.querySelectorAll(':scope > [key]'))
             .map(el=>[el.getAttribute('key'),el])
         );
     }
