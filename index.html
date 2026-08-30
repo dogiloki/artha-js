@@ -49,9 +49,17 @@
             container.refresh();
         });
         */
+       document.addEventListener('DOMContentLoaded',()=>{
+            const modal=document.getElementById('modal');
+            console.log(modal);
+            modal.toggle();
+       });
     </script>
 </head>
 <body>
+    <artha-modal id="modal" title="USUARIO dsamjdnh">
+        dsadsa
+    </artha-modal>
     <artha-collapsible>
         <div class="item-header">
             <span class="item-title">Prueba</span>

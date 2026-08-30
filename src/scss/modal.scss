@@ -1,0 +1,55 @@
+@use './colors.scss' as *;
+
+artha-modal.artha-modal{
+    position: fixed;
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    padding: 1.5rem;
+    background: rgb(0 0 0 / 55%);
+    inset: 0;
+    z-index: 1050;
+
+    &[hidden]{
+        display: none;
+    }
+
+    .artha-modal__dialog{
+        box-sizing: border-box;
+        width: min(100%,36rem);
+        max-height: 100%;
+        overflow: auto;
+        border-radius: .5rem;
+        background: $white;
+        padding: 20px;
+        box-shadow: 0 .75rem 2rem rgb(0 0 0 / 30%);
+    }
+
+    .artha-modal__header{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 2px solid $black4;
+    }
+
+    .artha-modal__title{
+        margin: 0;
+        font-size: 1.25rem;
+    }
+
+    .artha-modal__close{
+        border: 0;
+        padding: 0;
+        color: inherit;
+        background: transparent;
+        font-size: 1.75rem;
+        line-height: 1;
+        margin-bottom: 5px;
+        cursor: pointer;
+    }
+
+    .artha-modal__body{
+        margin: 10px 0px;
+    }
+
+}

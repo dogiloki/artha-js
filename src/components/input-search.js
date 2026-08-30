@@ -109,17 +109,23 @@ export default class InputSearch extends BaseComponent{
 
     _ensureStructure(){
         this.style.display="flex";
-        this.input=this.appendChild(DOMHelper.createElement('input',(input)=>{
-            input.classList.add('input-field');
-            input.type="search";
-            input.placeholder=this.text;
-        }));
-        this.button=this.appendChild(DOMHelper.createElement('button',(button)=>{
-            button.classList.add('button-search');
-            button.appendChild(DOMHelper.createElement('span',(span)=>{
-                span.classList.add('icon','search');
+        this.input=this.querySelector(':scope > input.input-field');
+        if(!this.input){
+            this.input=this.appendChild(DOMHelper.createElement('input',(input)=>{
+                input.classList.add('input-field');
+                input.type="search";
+                input.placeholder=this.text;
             }));
-        }));
+        }
+        this.button=this.querySelector(':scope > button.button-refresh');
+        if(!this.button){
+            this.button=this.appendChild(DOMHelper.createElement('button',(button)=>{
+                button.classList.add('button-search');
+                button.appendChild(DOMHelper.createElement('span',(span)=>{
+                    span.classList.add('icon','search');
+                }));
+            }));
+        }
     }
 
     _bindEvents(){
