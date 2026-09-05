@@ -102,13 +102,15 @@ export default class AutoSave{
     bind(element,options={}){
         const key=options.key??element.getAttribute('name');
         const events=options.events??['input','change'];
-        this.map.set(key,{
+        const value={
             el:element,
             get:options.get || this._defaultGet,
             set:options.set || this._defaultSet,
             events:Array.isArray(events)?events:[events]
-        });
-        this._attachListener(key);
+        };
+        this.map.set(key,value);
+        this._addMethodsToElement(element);
+        this._attachListener(key,value);
         return this;
     }
 
@@ -240,10 +242,20 @@ export default class AutoSave{
         };
     }
 
+    _addMethodsToElement(element){
+        element.isDirty=()=>element.__auto_save_state==="changed";
+        element.isClean=()=>element.__auto_save_state!=="changed";
+        element.isEmpty=()=>element.__auto_save_state==="empty";
+        element.isValid=()=>element.__auto_save_state==="valid";
+        element.isChanged=()=>element.__auto_save_state==="changed";
+        element.getState=()=>element.__auto_save_state;
+    }
+
     _setState(el,state){
         const c=this.options.classes;
         el.classList.remove(c.empty,c.valid,c.changed);
         el.classList.add(c[state]);
+        el.__auto_save_state=state;
     }
 
     _getState(){
@@ -276,8 +288,8 @@ export default class AutoSave{
         }
     }
 
-    _attachListener(key){
-        const item=this.map.get(key);
+    _attachListener(key,item=null){
+        item=item||this.map.get(key);
         if(!item) return;
         item.events.forEach((event)=>{
             item.el.addEventListener(event,()=>{
@@ -299,7 +311,7 @@ export default class AutoSave{
         clearTimeout(this.validation_timer);
         this.validation_timer=setTimeout(()=>{
             this.validate(key,data);
-        },this.options.debounce);
+        },50);
     }
 
     _validateState(key,item){
