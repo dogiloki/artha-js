@@ -27,23 +27,19 @@ export default class AutoSave{
         this.map=new Map();
         this.timer=null;
         this.restoring=false;
+        this._last_state=null;
     }
 
-    bind(element,options={}){
-        const key=options.key??element.getAttribute('name');
-        this.map.set(key,{
-            el:element,
-            get:options.get || this._defaultGet,
-            set:options.set || this._defaultSet,
-            events: options.events || ['input','change']
-        });
-        this._attachListener(key);
-        this.validate(key);
-        return this;
+    set(key,value){
+        const item=this.map.get(key);
+        if(!item) return;
+        item.set(item.el,value);
+        item.el.dispatchEvent(new Event('input',{bubbles:true}));
     }
 
-    unbind(key){
-        this.map.delete(key);
+    setServerData(data={}){
+        this.options.server=data || {};
+        this.validate();
         return this;
     }
 
@@ -65,8 +61,125 @@ export default class AutoSave{
         }
     }
 
-    getState(){
+    getDirtyFields(){
+        const dirty={};
+        this.map.forEach((item,key)=>{
+            if(this._validateState(key,item)==="changed"){
+                dirty[key]=this.getField(key);
+            }
+        });
+        return dirty;
+    }
+
+    getCleanFields(){
+        const clean={};
+        this.map.forEach((item,key)=>{
+            if(this._validateState(key,item)!=="changed"){
+                clean[key]=this.getField(key);
+            }
+        });
+        return clean;
+    }
+
+    getDiff(){
+        const diff={};
+        this.map.forEach((item,key)=>{
+            const local=item.get(item.el);
+            const server=this.options.server[key];
+            const changed=String(local??"")!==String(server??"");
+            if(changed){
+                diff[key]={local,server,changed};
+            }
+        });
+        return diff;
+    }
+
+    getState(key){
         return this.getField(key)?.state??null;
+    }
+
+    bind(element,options={}){
+        const key=options.key??element.getAttribute('name');
+        const events=options.events??['input','change'];
+        this.map.set(key,{
+            el:element,
+            get:options.get || this._defaultGet,
+            set:options.set || this._defaultSet,
+            events:Array.isArray(events)?events:[events]
+        });
+        this._attachListener(key);
+        this.validate(key);
+        return this;
+    }
+
+    unbind(key){
+        this.map.delete(key);
+        return this;
+    }
+
+    load(){
+        const raw=localStorage.getItem(this.options.key);
+        if(!raw) return;
+        let data;
+        try{
+            data=this.options.parser(raw);
+        }catch(ex){
+            console.warn('Storage corrupto');
+            return;
+        }
+        this.restoring=true;
+        this.map.forEach((item,key)=>{
+            if(data[key]===undefined) return;
+            item.set(item.el,data[key]);
+            item.el.dispatchEvent(new Event('input',{bubbles:true}));
+            item.el.dispatchEvent(new Event('change',{bubbles:true}));
+        });
+        this.restoring=false;
+        this.validate();
+        this.options.onLoad?.(data);
+    }
+
+    save(){
+        clearTimeout(this.timer);
+        this.timer=setTimeout(()=>{
+            const data={};
+            this.map.forEach((item,key)=>{
+                data[key]=item.get(item.el);
+            });
+            localStorage.setItem(
+                this.options.key,
+                this.options.serializer(data)
+            );
+            this.options.onSave?.(data);
+        },this.options.debounce);
+    }
+
+    clear(){
+        localStorage.removeItem(this.options.key);
+        this.map.clear();
+        this.validate();
+    }
+
+    restoreFromServer(){
+        this.restoring=true;
+        this.map.forEach((item,key)=>{
+            const value=this.options.server[key];
+            item.set(item.el,value??"");
+        });
+        this.restoring=false;
+        this.validate();
+        return this;
+    }
+
+    restoreFieldFromServer(key){
+        const item=this.map.get(key);
+        if(!item) return;
+        this.restoring=true;
+        const value=this.options.server[key];
+        item.set(item.el,value??"");
+        this.restoring=false;
+        this.validate(key);
+        return this;
     }
 
     isValid(key){
@@ -90,7 +203,47 @@ export default class AutoSave{
     }
 
     isClean(){
-        this.getFormState().clean;
+        return this.getFormState().clean;
+    }
+
+    validate(key=null,tigger=null){
+        let result;
+        if(key){
+            const item=this.map.get(key);
+            if(item){
+                result=this._validateState(key,item);
+            }
+        }else{
+            result={};
+            this.map.forEach((item,key)=>{
+                result[key]=this._validateState(key,item);
+            });
+        }
+        this._notifyState(tigger);
+        return result;
+    }
+
+    debug(){
+        return {
+            config:this.options,
+            fields:Array.from(this.map.entries()).map(([key,item])=>{
+                return {
+                    key,
+                    element:item.el,
+                    value:item.get(item.el),
+                    server:this.options.server[key],
+                    state:this._validateState(key,item)
+                }
+            }),
+            state:this._getState(),
+            storage:this.options.parser(localStorage.getItem(this.options.key)||'{}')
+        };
+    }
+
+    _setState(el,state){
+        const c=this.options.classes;
+        el.classList.remove(c.empty,c.valid,c.changed);
+        el.classList.add(c[state]);
     }
 
     _getState(){
@@ -115,7 +268,12 @@ export default class AutoSave{
     }
 
     _notifyState(tigger=null){
-        this.options.onStateChange?.(this._getState(),tigger);
+        const new_state=this._getState();
+        // Solo notificar si el estado cambió
+        if(JSON.stringify(new_state)!==JSON.stringify(this._last_state)){
+            this._last_state={...new_state};
+            this.options.onStateChange?.(new_state,tigger);
+        }
     }
 
     _attachListener(key){
@@ -162,96 +320,6 @@ export default class AutoSave{
             case "changed": this.options.onChanged?.(data); break;
         }
         return state;
-    }
-
-    validate(key=null,tigger=null){
-        let result;
-        if(key){
-            const item=this.map.get(key);
-            if(item){
-                result=this._validateState(key,item);
-            }
-        }else{
-            result={};
-            this.map.forEach((item,key)=>{
-                result[key]=this._validateState(key,item);
-            });
-        }
-        this._notifyState(tigger);
-        return result;
-    }
-
-    _setState(el,state){
-        const c=this.options.classes;
-        el.classList.remove(c.empty,c.valid,c.changed);
-        el.classList.add(c[state]);
-    }
-
-    setServerData(data={}){
-        this.options.server=data || {};
-        this.validate();
-        return this;
-    }
-
-    save(){
-        clearTimeout(this.timer);
-        this.timer=setTimeout(()=>{
-            const data={};
-            this.map.forEach((item,key)=>{
-                data[key]=item.get(item.el);
-            });
-            localStorage.setItem(
-                this.options.key,
-                this.options.serializer(data)
-            );
-            this.options.onSave?.(data);
-        },this.options.debounce);
-    }
-
-    load(){
-        const raw=localStorage.getItem(this.options.key);
-        if(!raw) return;
-        let data;
-        try{
-            data=this.options.parser(raw);
-        }catch(ex){
-            console.warn('Storage corrupto');
-            return;
-        }
-        this.restoring=true;
-        this.map.forEach((item,key)=>{
-            if(data[key]===undefined) return;
-            item.set(item.el,data[key]);
-            item.el.dispatchEvent(new Event('input',{bubbles:true}));
-            item.el.dispatchEvent(new Event('change',{bubbles:true}));
-        });
-        this.restoring=false;
-        this.validate();
-        this.options.onLoad?.(data);
-    }
-
-    set(key,value){
-        const item=this.map.get(key);
-        if(!item) return;
-        item.set(item.el,value);
-        item.el.dispatchEvent(new Event('input',{bubbles:true}));
-    }
-
-    clear(){
-        localStorage.removeItem(this.options.key);
-        this.map.clear();
-        this.validate();
-    }
-
-    resetToServer(){
-        this.restoring=true;
-        this.map.forEach((item,key)=>{
-            const value=this.options.server[key];
-            item.set(item.el,value??"");
-        });
-        this.restoring=false;
-        this.validate();
-        return this;
     }
 
     _defaultGet(el){
