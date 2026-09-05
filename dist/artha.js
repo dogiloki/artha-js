@@ -1183,7 +1183,8 @@ var AutoSave = class _AutoSave {
     options = { ..._AutoSave.defaults, ...options };
     this.options = options;
     this.map = /* @__PURE__ */ new Map();
-    this.timer = null;
+    this.save_timer = null;
+    this.validation_timer = null;
     this.restoring = false;
     this._last_state = null;
   }
@@ -1258,7 +1259,6 @@ var AutoSave = class _AutoSave {
       events: Array.isArray(events) ? events : [events]
     });
     this._attachListener(key);
-    this.validate(key);
     return this;
   }
   unbind(key) {
@@ -1283,12 +1283,14 @@ var AutoSave = class _AutoSave {
       item.el.dispatchEvent(new Event("change", { bubbles: true }));
     });
     this.restoring = false;
-    this.validate();
+    if (Object.keys(data).length > 0) {
+      this.validate();
+    }
     this.options.onLoad?.(data);
   }
   save() {
-    clearTimeout(this.timer);
-    this.timer = setTimeout(() => {
+    clearTimeout(this.save_timer);
+    this.save_timer = setTimeout(() => {
       const data = {};
       this.map.forEach((item, key) => {
         data[key] = item.get(item.el);
@@ -1303,7 +1305,7 @@ var AutoSave = class _AutoSave {
   clear() {
     localStorage.removeItem(this.options.key);
     this.map.clear();
-    this.validate();
+    this._last_state = null;
   }
   restoreFromServer() {
     this.restoring = true;
@@ -1344,20 +1346,18 @@ var AutoSave = class _AutoSave {
     return this.getFormState().clean;
   }
   validate(key = null, tigger = null) {
-    let result;
     if (key) {
       const item = this.map.get(key);
       if (item) {
-        result = this._validateState(key, item);
+        this._validateState(key, item);
       }
     } else {
-      result = {};
       this.map.forEach((item, key2) => {
-        result[key2] = this._validateState(key2, item);
+        this._validateState(key2, item);
       });
     }
     this._notifyState(tigger);
-    return result;
+    return this;
   }
   debug() {
     return {
@@ -1421,7 +1421,7 @@ var AutoSave = class _AutoSave {
         if (this.restoring) return;
         const value = item.get(item.el);
         this.options.onChange?.({ key, element: item.el, value });
-        this.validate(key, {
+        this._queueValidation(key, {
           key,
           element: item.el,
           value,
@@ -1430,6 +1430,12 @@ var AutoSave = class _AutoSave {
         this.save();
       });
     });
+  }
+  _queueValidation(key, data) {
+    clearTimeout(this.validation_timer);
+    this.validation_timer = setTimeout(() => {
+      this.validate(key, data);
+    }, this.options.debounce);
   }
   _validateState(key, item) {
     const value = item.get(item.el);
