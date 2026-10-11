@@ -1940,6 +1940,25 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
       }
     }
   }
+  setIdSelected(id, selected) {
+    const item = this.items.find((item2) => item2.dataset.id == id);
+    if (!item) return this;
+    this.setItemSelected(item, selected);
+  }
+  setItemSelected(item, selected = false) {
+    const id = item.dataset.id;
+    if (selected) {
+      if (!this.multiple) {
+        this.reset();
+      }
+      this.selection_store.add(id, item, item.data);
+      item.classList.add("selected");
+    } else {
+      this.selection_store.remove(item.dataset.id);
+      item.classList.remove("selected");
+    }
+    return this;
+  }
   router(id) {
     this.action = this.action_router.replaceAll("__ID__", id);
     return this;
@@ -2494,7 +2513,7 @@ var ArthaForm = class _ArthaForm extends BaseComponent {
     return valid;
   }
   // Enviar formulario
-  submit() {
+  submit(extra_data = {}) {
     if (!this.checkValidity()) {
       this.message.warning("Formulario incompleto");
       this.dispatchEvent(new CustomEvent("load", { detail: null }));
@@ -2508,6 +2527,7 @@ var ArthaForm = class _ArthaForm extends BaseComponent {
       }
       form_data[element.name] = value;
     });
+    Object.assign(form_data, extra_data);
     const id = this.getAttribute("id");
     this.task_queue.loadTask(`form-${id}`, null, (task) => {
       XHR.request({
@@ -2609,11 +2629,26 @@ var ArthaField = class extends ArthaForm {
   }
   changeValue(new_value) {
     if (!this.field_input) return;
+    let display_value;
     if (this.field_input.tagName == "SELECT") {
-      this.field_input[this.field_value_attrib] = new_value;
-      new_value = this.field_input.querySelector(`option[value="${new_value}"]`)?.textContent ?? new_value;
+      if (this.field_input.multiple) {
+        const values = Array.isArray(new_value) ? new_value : new_value == null || new_value == "" ? [] : [new_value];
+        for (const option of this.field_input.options) {
+          option.selected = values.some((value) => String(value) === String(option.value));
+        }
+        display_value = Array.from(this.field_input.selectedOptions).map((option) => option.textContent.trim()).filter((text) => text !== "").join("\n");
+      } else {
+        this.field_input[this.field_value_attrib] = new_value;
+        display_value = this.field_input.selectedOptions[0]?.textContent?.trim() ?? new_value;
+      }
     } else if (this.field_input.tagName === "ARTHA-CONTAINER") {
-      new_value = this.field_input.querySelector(".selected")?.textContent ?? new_value;
+      this.field_input.value = new_value;
+      if (this.field_input.multiple) {
+        display_value = this.field_input.selection().toArray().map((selection) => selection.element?.textContent?.trim() ?? selection.value).filter((text) => text !== "").join("\n");
+      } else {
+        const selection = this.field_input.selection().toArray()[0];
+        display_value = selection?.element?.textContent.trim() ?? new_value;
+      }
     } else {
       this.field_input[this.field_value_attrib] = new_value;
     }

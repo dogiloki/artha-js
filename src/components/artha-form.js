@@ -26,6 +26,12 @@ export default class ArthaForm extends BaseComponent{
         this.message=null;
         this.element_inputs=[];
         this.ignored_input=[];
+        this.request_options={
+            query:{},
+            data:{},
+            files:{},
+            headers:{}
+        };
         this._autosave_timer=null;
         this._autosave_delay=300;
         this._initialized=false;
@@ -252,6 +258,75 @@ export default class ArthaForm extends BaseComponent{
         return valid;
     }
 
+    query(key,value){
+        if(typeof key==="object"){
+            Object.assign(this.request_options.query,key);
+        }else{
+            this.request_options.data[key]=value;
+        }
+        return this;
+    }
+
+    data(key,value){
+        if(typeof key==="object"){
+            Object.assign(this.request_options.data,key);
+        }else{
+            this.request_options.data[key]=value;
+        }
+        return this;
+    }
+
+    files(key,value){
+        if(typeof key==="object"){
+            Object.assign(this.request_options.files,key);
+        }else{
+            this.request_options.data[key]=value;
+        }
+        return this;
+    }
+
+    headers(key,value){
+        if(typeof key==="object"){
+            Object.assign(this.request_options.headers,key);
+        }else{
+            this.request_options.data[key]=value;
+        }
+        return this;
+    }
+
+    method(value){
+        this.request_options.method=value;
+        return this;
+    }
+
+    responseType(value){
+        this.request_options.response_type=value;
+        return this;
+    }
+
+    timeout(value){
+        this.request_options.timeout=value;
+        return this;
+    }
+
+    withCredentials(value){
+        this.request_options.with_credentials=value;
+        return this;
+    }
+
+    retry(value=true,delay=null){
+        this.request_options.retry=value;
+        if(delay!==null){
+            this.request_options.retry_delay=delay;
+        }
+        return this;
+    }
+
+    transformResponse(callback){
+        this.request_options.transformResponse=callback;
+        return this;
+    }
+
     // Enviar formulario
     submit(){
         if(!this.checkValidity()){
@@ -271,10 +346,23 @@ export default class ArthaForm extends BaseComponent{
         const id=this.getAttribute('id');
         this.task_queue.loadTask(`form-${id}`,null,(task)=>{
             XHR.request({
+                ...this.request_options,
                 url:this.action,
-                method:this.method,
-                data:form_data,
-                response_type:this.response_type,
+                method:this.request_options.method??this.method,
+                query:{
+                    ...this.request_options.query
+                },
+                data:{
+                    ...form_data,
+                    ...this.request_options.data
+                },
+                files:{
+                    ...this.request_options.files
+                },
+                headers:{
+                    ...this.request_options.headers
+                },
+                response_type:this.request_options.response_type??this.response_type,
                 onLoad:(xhr)=>{
                     this.dispatchEvent(new CustomEvent('load',{detail:xhr}));
                 },

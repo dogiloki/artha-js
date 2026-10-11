@@ -15,11 +15,12 @@ export default class ArthaContainer extends BaseComponent{
         page:1,
         response_type:'json'
     };
+    static inicial_requests=new Map();
 
     constructor(){
         super(
             ["template","action","action_router","method","page","search","name","search_mode",
-            "pagination","message","searcher","selectable","multiple","response_type","manual"],
+            "pagination","message","searcher","selectable","multiple","response_type","manual","reuse-request"],
             {
                 booleans:['searcher','selectable','multiple','manual'],
                 element_refs:['template','message'],
@@ -84,10 +85,37 @@ export default class ArthaContainer extends BaseComponent{
         this.content=this.querySelector(':scope > dynamic-content') || this.appendChild(document.createElement('dynamic-content'));
         this._content=this.content.children[0];
         if(this.hasAction() && !this.manual){
-            if(this.searcher){
-                this.refresh(this.searcher_input.value);
+            const search=this.search?this.searcher_input.value:null;
+            const group=this.getAttribute('reuse-request');
+            if(group){
+                const key=JSON.stringify({
+                    group,
+                    action:this.action,
+                    method:this.method,
+                    pagination:this.hasPagination()?this.pagination:null,
+                    page:this.hasPagination()?this.page:null,
+                    search,
+                    response_type:this.response_type
+                });
+                this._shared_initial_key=key;
+                const cached=ArthaContainer.inicial_requests.get(key);
+                if(cached){
+                    if(cached.status==='resolved'){
+                        this.render(cached.data);
+                    }else{
+                        cached.waiters.push(this);
+                    }
+                }else{
+                    ArthaContainer.inicial_requests.set(key,{
+                        status:'pending',
+                        data:null,
+                        waiters:[]
+                    });
+                    this._is_shared_initial_loader=true;
+                    this.refresh(search);
+                }
             }else{
-                this.refresh();
+                this.refresh(search);
             }
         }else if(this.search_mode==InputSearch.SEARCH_MODES.local){
             this.refresh(this.searcher_input.value);
@@ -143,6 +171,19 @@ export default class ArthaContainer extends BaseComponent{
         this._current_xhr=null;
     }
 
+    _clearSharedInitialRequest(){
+        const key=this._shared_initial_key;
+        if(!this._is_shared_initial_loader || !key) return;
+        const cached=ArthaContainer.inicial_requests.get(key);
+        if(cached?.status==='pending'){
+            ArthaContainer.initial_requests.delete(key);
+            for(const container of cached.waiters){
+                container.renderMessage('No se pudo cargar los datos','error');
+            }
+        }
+        this._is_shared_initial_loader=false;
+    }
+
     // value - getter/setter
     get value(){
         if(!this.selectable) return null;
@@ -165,6 +206,27 @@ export default class ArthaContainer extends BaseComponent{
                 item.classList.remove('selected');
             }
         }
+    }
+
+    setIdSelected(id,selected){
+        const item=this.items.find(item=>item.dataset.id==id);
+        if(!item) return this;
+        this.setItemSelected(item,selected);
+    }
+
+    setItemSelected(item,selected=false){
+        const id=item.dataset.id;
+        if(selected){
+            if(!this.multiple){
+                this.reset();
+            }
+            this.selection_store.add(id,item,item.data);
+            item.classList.add('selected');
+        }else{
+            this.selection_store.remove(item.dataset.id);
+            item.classList.remove('selected');
+        }
+        return this;
     }
 
     router(id){
@@ -205,15 +267,32 @@ export default class ArthaContainer extends BaseComponent{
                         if(json.message){
                             this.renderMessage(json.message,json.status);
                         }
+                        const key=this._shared_initial_key;
+                        if(this._is_shared_initial_loader && key){
+                            const cached=ArthaContainer.inicial_requests.get(key);
+                            if(cached){
+                                cached.status='resolved';
+                                cached.data=json.data;
+                                for(const container of cached.waiters){
+                                    if(container.isConnected){
+                                        container.render(json.data);
+                                    }
+                                }
+                                cached.waiters.length=0;
+                            }
+                            this._is_shared_initial_loader=false;
+                        }
                         this.render(json.data);
                     });
                 },
                 onError:(err)=>{
+                    this._clearSharedInitialRequest();
                     this.renderMessage(err??"Error de conexión","error");
                     task.onFinalize();
                     this._cancelSearch();
                 },
                 onAbort:(err)=>{
+                    this._clearSharedInitialRequest();
                     task.onFinalize();
                     this._cancelSearch();
                 }

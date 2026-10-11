@@ -66,9 +66,22 @@ export default class ArthaField extends ArthaForm{
         if(!this.field_input) return;
         if(this.field_input.tagName=="SELECT"){
             this.field_input[this.field_value_attrib]=new_value;
-            new_value=this.field_input.querySelector(`option[value="${new_value}"]`)?.textContent??new_value;
+            if(this.field_input.multiple){
+                new_value=Array.from(this.field_input.selectedOptions)
+                .map(item=>item.textContent.trim())
+                .join(", ");
+            }else{
+                new_value=this.field_input.querySelector(`option[value="${new_value}"]`)?.textContent??new_value;
+            }
         }else if(this.field_input.tagName==="ARTHA-CONTAINER"){
-            new_value=this.field_input.querySelector('.selected')?.textContent??new_value;
+            if(this.field_input.multiple){
+                new_value=Array.from(this.field_input.querySelectorAll('.selected'))
+                .map(item=>item.textContent.trim())
+                .filter(Boolean)
+                .join(", ");
+            }else{
+                new_value=this.field_input.querySelector('.selected')?.textContent??new_value;
+            }
         }else{
             this.field_input[this.field_value_attrib]=new_value;
         }
