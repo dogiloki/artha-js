@@ -1,0 +1,35 @@
+@use './colors.scss' as *;
+
+artha-container .artha-pagination{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 0;
+}
+artha-container .artha-pagination-controls{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+}
+artha-container .artha-pagination-button{
+    padding: 6px 10px;
+    border:  1px solid $white2;
+    border-radius: 5px;
+    background: transparent;
+    cursor: pointer;
+}
+artha-container .artha-pagination-button.active{
+    background-color: $valid-color;
+    color: $white;
+    border-color: $black3;
+}
+artha-container .artha-pagination-button:disabled{
+    opacity: 0.50;
+    cursor: not-allowed;
+}
+.artha-pagination-info, .artha-pagination-page-info{
+    font-size: 0.8rem;
+}

@@ -1790,9 +1790,11 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
   static defaults = {
     method: "GET",
     pagination: 10,
+    pagination_options: "10,25,50,100",
     page: 1,
     response_type: "json"
   };
+  static inicial_requests = /* @__PURE__ */ new Map();
   constructor() {
     super(
       [
@@ -1804,13 +1806,15 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
         "search",
         "name",
         "search_mode",
+        "pagination_options",
         "pagination",
         "message",
         "searcher",
         "selectable",
         "multiple",
         "response_type",
-        "manual"
+        "manual",
+        "reuse-request"
       ],
       {
         booleans: ["searcher", "selectable", "multiple", "manual"],
@@ -1818,7 +1822,14 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
         defaults: {
           response_type: _ArthaContainer.defaults.response_type,
           method: _ArthaContainer.defaults.method,
-          search_mode: InputSearch.SEARCH_MODES.server
+          search_mode: InputSearch.SEARCH_MODES.server,
+          pagination_options: _ArthaContainer.defaults.pagination_options
+        },
+        resolvers: {
+          pagination_options: {
+            get: (value) => value.split(",").map(Number),
+            set: (value) => Array.isArray(value) ? value.join(",") : value
+          }
         },
         reflect: {
           search: false,
@@ -1867,11 +1878,45 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
     }
     this.content = this.querySelector(":scope > dynamic-content") || this.appendChild(document.createElement("dynamic-content"));
     this._content = this.content.children[0];
+    if (this.hasPagination()) {
+      this.pagination_container = DOMHelper.createElement("nav", (nav) => {
+        nav.className = "artha-pagination";
+        nav.setAttribute("aria-label", "Paginaci\xF3n");
+      });
+      this.insertBefore(this.pagination_container, this.content);
+    }
     if (this.hasAction() && !this.manual) {
-      if (this.searcher) {
-        this.refresh(this.searcher_input.value);
+      const search = this.search ? this.searcher_input.value : null;
+      const group = this.getAttribute("reuse-request");
+      if (group) {
+        const key = JSON.stringify({
+          group,
+          action: this.action,
+          method: this.method,
+          pagination: this.hasPagination() ? this.pagination : null,
+          page: this.hasPagination() ? this.page : null,
+          search,
+          response_type: this.response_type
+        });
+        this._shared_initial_key = key;
+        const cached = _ArthaContainer.inicial_requests.get(key);
+        if (cached) {
+          if (cached.status === "resolved") {
+            this.render(cached.data);
+          } else {
+            cached.waiters.push(this);
+          }
+        } else {
+          _ArthaContainer.inicial_requests.set(key, {
+            status: "pending",
+            data: null,
+            waiters: []
+          });
+          this._is_shared_initial_loader = true;
+          this.refresh(search);
+        }
       } else {
-        this.refresh();
+        this.refresh(search);
       }
     } else if (this.search_mode == InputSearch.SEARCH_MODES.local) {
       this.refresh(this.searcher_input.value);
@@ -1915,9 +1960,114 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
       }
     }
   }
-  _cancelSearch(evt) {
+  _cancelSearch() {
     this._current_xhr?.abort();
     this._current_xhr = null;
+  }
+  _clearSharedInitialRequest() {
+    const key = this._shared_initial_key;
+    if (!this._is_shared_initial_loader || !key) return;
+    const cached = _ArthaContainer.inicial_requests.get(key);
+    if (cached?.status === "pending") {
+      _ArthaContainer.initial_requests.delete(key);
+      for (const container of cached.waiters) {
+        container.renderMessage("No se pudo cargar los datos", "error");
+      }
+    }
+    this._is_shared_initial_loader = false;
+  }
+  _renderPagination(meta) {
+    const nav = this.pagination_container;
+    if (!nav || !meta) return;
+    nav.replaceChildren();
+    const current = Number(meta.current_page);
+    const last = Number(meta.last_page);
+    if (!Number.isInteger(current) || !Number.isInteger(last) || last < 1) return;
+    const info = DOMHelper.createElement("span", (span) => {
+      span.className = "artha-pagination-info";
+      span.textContent = meta.total > 0 ? `Mostrando ${meta.from}-${meta.to} de ${meta.total} registros` : `Sin registros`;
+    });
+    const pagination_select = DOMHelper.createElement("select", (select) => {
+      select.className = "artha-pagination-select";
+      const options = meta.pagination_options ?? this.pagination_options;
+      options.forEach((size) => {
+        const option = DOMHelper.createElement("option", (option2) => {
+          option2.value = size;
+          option2.textContent = `${size} por p\xE1gina`;
+          option2.selected = Number(size) === Number(this.pagination);
+          select.appendChild(option2);
+        });
+        select.addEventListener("change", () => {
+          this.pagination = Number(select.value);
+          this.page = 1;
+          this.refresh(this.search);
+        });
+      });
+    });
+    const controls = DOMHelper.createElement("div", (div) => {
+      div.className = "artha-pagination-controls";
+    });
+    const addButton = (label, page, options = {}) => {
+      const button = DOMHelper.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.className = "artha-pagination-button";
+      if (options.active) {
+        button.classList.add("active");
+        button.setAttribute("aria-current", "page");
+      }
+      button.disabled = options.disabled ?? false;
+      if (Number.isInteger(page)) {
+        button.dataset.page = page;
+      }
+      controls.appendChild(button);
+    };
+    addButton("<", current - 1, {
+      disabled: current <= 1
+    });
+    addButton("1", 1, {
+      active: current === 1
+    });
+    const start = Math.max(2, current - 1);
+    const end = Math.min(last - 1, current + 2);
+    if (start > 2) {
+      const dots = DOMHelper.createElement("span", (span) => {
+        span.textContent = "...";
+      });
+      controls.appendChild(dots);
+    }
+    for (let page = start; page <= end; page++) {
+      addButton(String(page), page, {
+        active: page === current
+      });
+    }
+    if (end < last - 1) {
+      const dots = DOMHelper.createElement("span", (span) => {
+        span.textContent = "...";
+      });
+      controls.appendChild(dots);
+    }
+    if (last > 1) {
+      addButton(String(last), last, {
+        active: current >= last
+      });
+    }
+    addButton(">", current + 1, {
+      disabled: current >= last
+    });
+    if (!this._pagination_click_handler) {
+      this._pagination_click_handler = (evt) => {
+        const button = evt.target.closest("button[data-page]");
+        if (!button || !nav.contains(button) || button.disabled) return;
+        this.goToPage(Number(button.dataset.page));
+      };
+      nav.addEventListener("click", this._pagination_click_handler);
+    }
+    const page_info = DOMHelper.createElement("span", (span) => {
+      span.className = "artha-pagination-page-info";
+      span.textContent = `P\xE1gina ${current} de ${last}`;
+    });
+    nav.append(info, pagination_select, controls, page_info);
   }
   // value - getter/setter
   get value() {
@@ -1995,15 +2145,38 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
             if (json.message) {
               this.renderMessage(json.message, json.status);
             }
+            const key = this._shared_initial_key;
+            if (this._is_shared_initial_loader && key) {
+              const cached = _ArthaContainer.inicial_requests.get(key);
+              if (cached) {
+                cached.status = "resolved";
+                cached.data = json.data;
+                for (const container of cached.waiters) {
+                  if (container.isConnected) {
+                    container.render(json.data);
+                    if (container.hasPagination()) {
+                      container._renderPagination(json.meta);
+                    }
+                  }
+                }
+                cached.waiters.length = 0;
+              }
+              this._is_shared_initial_loader = false;
+            }
             this.render(json.data);
+            if (this.hasPagination()) {
+              this._renderPagination(json.meta);
+            }
           });
         },
         onError: (err) => {
+          this._clearSharedInitialRequest();
           this.renderMessage(err ?? "Error de conexi\xF3n", "error");
           task.onFinalize();
           this._cancelSearch();
         },
         onAbort: (err) => {
+          this._clearSharedInitialRequest();
           task.onFinalize();
           this._cancelSearch();
         }
@@ -2031,9 +2204,19 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
     return this.refresh(this.search);
   }
   goToPage(page) {
+    this._cancelSearch();
     page = Number(page);
     if (!this.hasPagination() || !Number.isInteger(page) || page < 1) return;
     this.page = page;
+    this.pagination_container.querySelectorAll("button[data-page]").forEach((button) => {
+      if (Number(button.dataset.page) === page) {
+        button.classList.add("active");
+        button.setAttribute("aria-current", "page");
+      } else {
+        button.classList.remove("active");
+        button.removeAttribute("aria-current");
+      }
+    });
     return this.refresh(this.search);
   }
   resetPagination(refresh = false) {
@@ -2041,6 +2224,7 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
     if (refresh) return this.refresh(this.search);
   }
   refresh(search = null) {
+    this._cancelSearch();
     search ??= this.search;
     if (this.loader_container) this.loader_container.remove();
     if (this.template) {
@@ -2307,6 +2491,12 @@ var ArthaForm = class _ArthaForm extends BaseComponent {
     this.message = null;
     this.element_inputs = [];
     this.ignored_input = [];
+    this.request_options = {
+      query: {},
+      data: {},
+      files: {},
+      headers: {}
+    };
     this._autosave_timer = null;
     this._autosave_delay = 300;
     this._initialized = false;
@@ -2512,8 +2702,67 @@ var ArthaForm = class _ArthaForm extends BaseComponent {
     }
     return valid;
   }
+  query(key, value) {
+    if (typeof key === "object") {
+      Object.assign(this.request_options.query, key);
+    } else {
+      this.request_options.data[key] = value;
+    }
+    return this;
+  }
+  data(key, value) {
+    if (typeof key === "object") {
+      Object.assign(this.request_options.data, key);
+    } else {
+      this.request_options.data[key] = value;
+    }
+    return this;
+  }
+  files(key, value) {
+    if (typeof key === "object") {
+      Object.assign(this.request_options.files, key);
+    } else {
+      this.request_options.data[key] = value;
+    }
+    return this;
+  }
+  headers(key, value) {
+    if (typeof key === "object") {
+      Object.assign(this.request_options.headers, key);
+    } else {
+      this.request_options.data[key] = value;
+    }
+    return this;
+  }
+  method(value) {
+    this.request_options.method = value;
+    return this;
+  }
+  responseType(value) {
+    this.request_options.response_type = value;
+    return this;
+  }
+  timeout(value) {
+    this.request_options.timeout = value;
+    return this;
+  }
+  withCredentials(value) {
+    this.request_options.with_credentials = value;
+    return this;
+  }
+  retry(value = true, delay = null) {
+    this.request_options.retry = value;
+    if (delay !== null) {
+      this.request_options.retry_delay = delay;
+    }
+    return this;
+  }
+  transformResponse(callback) {
+    this.request_options.transformResponse = callback;
+    return this;
+  }
   // Enviar formulario
-  submit(extra_data = {}) {
+  submit() {
     if (!this.checkValidity()) {
       this.message.warning("Formulario incompleto");
       this.dispatchEvent(new CustomEvent("load", { detail: null }));
@@ -2527,14 +2776,26 @@ var ArthaForm = class _ArthaForm extends BaseComponent {
       }
       form_data[element.name] = value;
     });
-    Object.assign(form_data, extra_data);
     const id = this.getAttribute("id");
     this.task_queue.loadTask(`form-${id}`, null, (task) => {
       XHR.request({
+        ...this.request_options,
         url: this.action,
-        method: this.method,
-        data: form_data,
-        response_type: this.response_type,
+        method: this.request_options.method ?? this.method,
+        query: {
+          ...this.request_options.query
+        },
+        data: {
+          ...form_data,
+          ...this.request_options.data
+        },
+        files: {
+          ...this.request_options.files
+        },
+        headers: {
+          ...this.request_options.headers
+        },
+        response_type: this.request_options.response_type ?? this.response_type,
         onLoad: (xhr) => {
           this.dispatchEvent(new CustomEvent("load", { detail: xhr }));
         },
@@ -2629,25 +2890,18 @@ var ArthaField = class extends ArthaForm {
   }
   changeValue(new_value) {
     if (!this.field_input) return;
-    let display_value;
     if (this.field_input.tagName == "SELECT") {
+      this.field_input[this.field_value_attrib] = new_value;
       if (this.field_input.multiple) {
-        const values = Array.isArray(new_value) ? new_value : new_value == null || new_value == "" ? [] : [new_value];
-        for (const option of this.field_input.options) {
-          option.selected = values.some((value) => String(value) === String(option.value));
-        }
-        display_value = Array.from(this.field_input.selectedOptions).map((option) => option.textContent.trim()).filter((text) => text !== "").join("\n");
+        new_value = Array.from(this.field_input.selectedOptions).map((item) => item.textContent.trim()).join(", ");
       } else {
-        this.field_input[this.field_value_attrib] = new_value;
-        display_value = this.field_input.selectedOptions[0]?.textContent?.trim() ?? new_value;
+        new_value = this.field_input.querySelector(`option[value="${new_value}"]`)?.textContent ?? new_value;
       }
     } else if (this.field_input.tagName === "ARTHA-CONTAINER") {
-      this.field_input.value = new_value;
       if (this.field_input.multiple) {
-        display_value = this.field_input.selection().toArray().map((selection) => selection.element?.textContent?.trim() ?? selection.value).filter((text) => text !== "").join("\n");
+        new_value = Array.from(this.field_input.querySelectorAll(".selected")).map((item) => item.textContent.trim()).filter(Boolean).join(", ");
       } else {
-        const selection = this.field_input.selection().toArray()[0];
-        display_value = selection?.element?.textContent.trim() ?? new_value;
+        new_value = this.field_input.querySelector(".selected")?.textContent ?? new_value;
       }
     } else {
       this.field_input[this.field_value_attrib] = new_value;

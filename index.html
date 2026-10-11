@@ -65,6 +65,22 @@
         dsadsa
     </artha-modal>
     -->
+    <artha-container
+        class="field-input select-data-container"
+        action="http://localhost:8000/api/gn/units"
+        template="select-unit-template"
+        name="id_unit"
+        placeholder=""
+        refresh-on="gn_units"
+        reuse-request="select-gn-unit-initial"
+        selectable
+        pagination
+        searcher>
+    </artha-container>
+
+    <template id="select-unit-template">
+        <div class="select-data-item" data-wire="show"></div>
+    </template>
     <artha-collapsible>
         <div class="item-header">
             <span class="item-title">Prueba</span>
