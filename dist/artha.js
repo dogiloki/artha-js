@@ -997,7 +997,7 @@ var TaskQueueItem = class {
       message
     } = options;
     this.options = options;
-    this.message_element = options.message instanceof ArthaMessage ? options.message : document.querySelector("#" + options.message) ?? null;
+    this.message_element = options.message instanceof ArthaMessage ? options.message : document.querySelector(`#${options.message}`) ?? null;
     this.resolve_callback = null;
     this.reject_callback = null;
     this.finalized = false;
@@ -1846,6 +1846,7 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
     this.task_queue = TaskQueue.singleton();
     this._current_xhr = null;
     this.items = [];
+    this.extra_items = [];
     this.selection_store = new SelectionStore();
     this._initialized = false;
     this._onRefresh = (evt) => this._handleRefresh(evt);
@@ -2090,6 +2091,11 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
       }
     }
   }
+  injectItem(item) {
+    const items = Array.isArray(item) ? item : [item];
+    this.extra_items.push(...items);
+    return this;
+  }
   setIdSelected(id, selected) {
     const item = this.items.find((item2) => item2.dataset.id == id);
     if (!item) return this;
@@ -2140,6 +2146,17 @@ var ArthaContainer = class _ArthaContainer extends BaseComponent {
         },
         onData: (xhr, json) => {
           this._current_xhr = null;
+          if (Array.isArray(json.data) && this.extra_items.length) {
+            const ids = new Set(json.data.map((item) => String(item.id)));
+            for (const item of this.extra_items) {
+              if (!item || item.id == null) continue;
+              const id = String(item.id);
+              if (ids.has(id)) continue;
+              json.data.unshift(item);
+              ids.add(id);
+            }
+            this.extra_items.length = 0;
+          }
           task.resolve(xhr, () => {
             this.dispatchEvent(new CustomEvent("resolve", { detail: json }));
             if (json.message) {
@@ -2840,6 +2857,7 @@ var ArthaField = class extends ArthaForm {
   constructor() {
     super();
     super.onConnected();
+    this.onBeforeSave = null;
     this.mode_edition = false;
     this.original_value = null;
     this._initialized_artha_field = false;
@@ -2916,7 +2934,15 @@ var ArthaField = class extends ArthaForm {
     DOMHelper.modal(this.button_save, active);
     DOMHelper.modal(this.button_cancel, active);
   }
-  save() {
+  async save() {
+    if (typeof this.onBeforeSave === "function") {
+      const authorized = await this.onBeforeSave();
+      if (authorized === false) {
+        return;
+      } else {
+        this.data(authorized);
+      }
+    }
     this.original_value = this.field_input[this.field_value_attrib];
     this.changeValue(this.original_value);
     this.modeEdition(false);

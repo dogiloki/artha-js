@@ -6,6 +6,7 @@ export default class ArthaField extends ArthaForm{
     constructor(){
         super();
         super.onConnected();
+        this.onBeforeSave=null;
         this.mode_edition=false;
         this.original_value=null;
         this._initialized_artha_field=false;
@@ -97,7 +98,15 @@ export default class ArthaField extends ArthaForm{
         DOMHelper.modal(this.button_cancel,active);
     }
 
-    save(){
+    async save(){
+        if(typeof this.onBeforeSave==="function"){
+            const authorized=await this.onBeforeSave();
+            if(authorized===false){
+                return;
+            }else{
+                this.data(authorized);
+            }
+        }
         this.original_value=this.field_input[this.field_value_attrib];
         this.changeValue(this.original_value);
         this.modeEdition(false);

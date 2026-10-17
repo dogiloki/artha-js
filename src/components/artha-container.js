@@ -51,6 +51,7 @@ export default class ArthaContainer extends BaseComponent{
         this.task_queue=TaskQueue.singleton();
         this._current_xhr=null;
         this.items=[];
+        this.extra_items=[];
         this.selection_store=new SelectionStore();
         this._initialized=false;
         this._onRefresh=(evt)=>this._handleRefresh(evt);
@@ -322,6 +323,12 @@ export default class ArthaContainer extends BaseComponent{
         }
     }
 
+    injectItem(item){
+        const items=Array.isArray(item)?item:[item];
+        this.extra_items.push(...items);
+        return this;
+    }
+
     setIdSelected(id,selected){
         const item=this.items.find(item=>item.dataset.id==id);
         if(!item) return this;
@@ -375,6 +382,18 @@ export default class ArthaContainer extends BaseComponent{
                 },
                 onData:(xhr,json)=>{
                     this._current_xhr=null;
+                    // Inyectar elementos adicionales en la respuesta
+                    if(Array.isArray(json.data) && this.extra_items.length){
+                        const ids=new Set(json.data.map(item=>String(item.id)));
+                        for(const item of this.extra_items){
+                            if(!item || item.id==null) continue;
+                            const id=String(item.id);
+                            if(ids.has(id)) continue;
+                            json.data.unshift(item);
+                            ids.add(id);
+                        }
+                        this.extra_items.length=0;
+                    }
                     // Respuesta procesada en en formato json
                     task.resolve(xhr,()=>{
                         this.dispatchEvent(new CustomEvent('resolve',{detail:json}));

@@ -54,14 +54,14 @@ Promise.resolve().then(()=>{
 });
 
 function registerComponents(){
+    if(!customElements.get('artha-message')){
+        customElements.define('artha-message',ArthaMessage);
+    }
     if(!customElements.get('artha-container')){
         customElements.define('artha-container',ArthaContainer);
     }
     if(!customElements.get('artha-form')){
         customElements.define('artha-form',ArthaForm);
-    }
-    if(!customElements.get('artha-message')){
-        customElements.define('artha-message',ArthaMessage);
     }
     if(!customElements.get('artha-loader')){
         customElements.define('artha-loader',ArthaLoader);

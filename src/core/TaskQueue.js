@@ -62,7 +62,7 @@ class TaskQueueItem{
             message
         }=options;
         this.options=options;
-        this.message_element=options.message instanceof ArthaMessage?options.message:document.querySelector("#"+options.message)??null;
+        this.message_element=(options.message instanceof ArthaMessage || options.message?.tagName==='ARTHA-MESSAGE')?options.message:document.querySelector(`#${options.message}`)??null;
         this.resolve_callback=null;
         this.reject_callback=null;
         this.finalized=false;
